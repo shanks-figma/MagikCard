@@ -10,7 +10,7 @@
     "format": "prettier \"**/*.{css,js,json,jsx,ts,tsx}\"",
     "start": "prisma generate && prisma db push && next start",
     "lint": "next lint",
-    "seed": "ts-node lib/seed.ts"
+    "generate": "pnpm prisma generate && pnpm prisma db push"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

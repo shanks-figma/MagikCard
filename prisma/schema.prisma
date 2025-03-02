@@ -14,6 +14,7 @@ model UserDetails {
     id           String  @id @default(auto()) @map("_id") @db.ObjectId
     email        String  @unique
     redirect_url String?
+    user_id      String  @unique
 
     premium     Boolean @default(false)
     earlyAccess Boolean @default(false)
