@@ -24,4 +24,8 @@ export default function Page({ params }: { params: { user_id: string } }) {
     };
     fetchUser();
   }, [user_id]);
+
+  return (
+    <div className="flex justify-center items-center h-screen">Loading...</div>
+  );
 }
