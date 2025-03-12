@@ -13,9 +13,7 @@ export default function Page({ params }: { params: { user_id: string } }) {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const user = await fetch(
-        `http://localhost:3000/api/get-user?userId=${user_id}`
-      );
+      const user = await fetch(`/api/get-user?userId=${user_id}`);
       const data = await user.json();
       console.log("data", data);
       if (data.redirect_url) {
