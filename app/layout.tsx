@@ -23,11 +23,11 @@ export default async function RootLayout({
     <AuthProvider>
       <html lang="en">
         <body className={cx(sfPro.variable, inter.variable)}>
-          <div className="fixed h-screen w-full" />
-          <Suspense fallback="...">
+          {/* <div className="fixed h-screen w-full" /> */}
+          {/* <Suspense fallback="...">
             <NavBar />
-          </Suspense>
-          <main className="flex min-h-screen w-full flex-col items-center justify-center py-32">
+          </Suspense> */}
+          <main className="flex h-screen w-full flex-col items-center justify-center py-32">
             {children}
           </main>
           {/* <Footer /> */}

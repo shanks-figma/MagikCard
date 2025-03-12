@@ -1,14 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
 const userSchema = z.string();
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    // Get the userId from the URL search params
-    const url = new URL(req.url);
-    const userId = url.searchParams.get("userId");
+    const searchParams = req.nextUrl.searchParams;
+    const userId = searchParams.get("userId");
 
     if (!userId) {
       return NextResponse.json(

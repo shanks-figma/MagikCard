@@ -1,31 +1,29 @@
-import React from "react";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import prisma from "@/lib/prisma";
+"use client";
+import { useEffect } from "react";
+// import { useSession } from "next-auth/react";
 
-export default async function Page({
-  params,
-}: {
-  params: { user_id: string };
-}) {
+export default function Page({ params }: { params: { user_id: string } }) {
   const { user_id } = params;
-  const session = await getServerSession(authOptions);
-  console.log(session);
-  if (!session) {
-    // redirect("/");
-    console.log("Unauthorized");
-  }
+  // const session = useSession();
+  // console.log(session);
+  // if (!session) {
+  //   console.log("Unauthorized");
+  //   redirect("/");
+  // }
 
-  const user = await prisma.user.findUnique({
-    where: {
-      id: user_id,
-    },
-  });
-
-  if (!user) {
-    console.log("User not found");
-  }
-
-  return <div>Page {user_id}</div>;
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await fetch(
+        `http://localhost:3000/api/get-user?userId=${user_id}`
+      );
+      const data = await user.json();
+      console.log("data", data);
+      if (data.redirect_url) {
+        return (window.location.href = data.redirect_url);
+      } else {
+        return (window.location.href = "/");
+      }
+    };
+    fetchUser();
+  }, [user_id]);
 }
