@@ -29,8 +29,9 @@ export default function UserDropdown({ session }: { session: Session }) {
               </p>
             </div>
             <a
+              disabled={true}
               href="/dashboard"
-              className="relative flex w-full  items-center justify-start space-x-2 rounded-md p-2 text-left text-sm transition-all duration-75 hover:bg-gray-100"
+              className="relative flex w-full  items-center justify-start space-x-2 rounded-md p-2 text-left text-sm transition-all duration-75 hover:bg-gray-100 pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <LayoutDashboard className="h-4 w-4" />
               <p className="text-sm">Dashboard</p>

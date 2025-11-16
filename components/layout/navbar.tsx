@@ -35,12 +35,13 @@ export default function NavBar({ session }: { session: Session | null }) {
           <div className="flex items-center space-x-5 ">
             {session ? (
               <>
-                <Link
+                {/* <Link
                   href="/dashboard"
                   className="sm:font-base inline-flex w-full items-center justify-center rounded-xl bg-[#687af0]/5 px-4 py-3 text-center text-xs font-light text-gray-100 duration-200 hover:bg-[#687af0]/5 hover:text-[#687af0] focus:outline-none focus-visible:outline-black focus-visible:ring-black sm:px-6 sm:py-3 sm:text-lg sm:font-medium lg:w-auto"
                 >
                   {content.dashboard.title}
-                </Link>
+                </Link> */}
+                <span className="text-black">{session.user?.name}</span>
 
                 <UserDropdown session={session} />
               </>
