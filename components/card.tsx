@@ -8,6 +8,8 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Session } from "next-auth";
+import { useGetUserDetails } from "@/hooks/useGetUser";
 
 // Theme definitions
 const themes = {
@@ -63,7 +65,10 @@ const themes = {
   },
 };
 
-export default function FlippableCard() {
+export default function FlippableCard({ session }: { session: Session }) {
+  const { user } = session;
+  const userDetails = useGetUserDetails(user?.email || "");
+
   const [isFlipped, setIsFlipped] = useState(false);
   const [formData, setFormData] = useState({
     magikLink: "",
@@ -86,9 +91,8 @@ export default function FlippableCard() {
         height: img.naturalHeight,
       });
     };
-    img.src =
-      "https://res.cloudinary.com/dlmgrochr/image/upload/v1763283241/magikcard-front_bt7ffp.png";
-  }, []);
+    img.src = userDetails?.card_front_url || "";
+  }, [userDetails?.card_front_url]);
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
@@ -199,7 +203,7 @@ export default function FlippableCard() {
               >
                 {imageDimensions && (
                   <Image
-                    src="https://res.cloudinary.com/dlmgrochr/image/upload/v1763283241/magikcard-front_bt7ffp.png"
+                    src={userDetails?.card_front_url || ""}
                     alt="Card front"
                     width={imageDimensions.width}
                     height={imageDimensions.height}
@@ -240,7 +244,7 @@ export default function FlippableCard() {
               >
                 {imageDimensions && (
                   <Image
-                    src="https://res.cloudinary.com/dlmgrochr/image/upload/v1763283242/magikcard-back_biv5na.png"
+                    src={userDetails?.card_back_url || ""}
                     alt="Card back"
                     width={imageDimensions.width}
                     height={imageDimensions.height}
