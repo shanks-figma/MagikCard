@@ -28,9 +28,9 @@ export default async function RootLayout({
       <html lang="en">
         <body className={cx(sfPro.variable, inter.variable)}>
           {/* <div className="fixed h-screen w-full" /> */}
-          <Suspense fallback="...">
+          {/* <Suspense fallback="...">
             <NavBar session={session} />
-          </Suspense>
+          </Suspense> */}
           <main className="flex h-screen w-full flex-col items-center justify-center">
             {children}
           </main>
