@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import redis from "@/lib/redis";
 import { z } from "zod";
+
+const CACHE_TTL = 60 * 30; // 30 minutes
 
 const userSchema = z.string();
 
@@ -17,6 +20,12 @@ export async function GET(req: NextRequest) {
     }
 
     if (userSchema.safeParse(userId).success) {
+      const cacheKey = `user:${userId}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached, { status: 200 });
+      }
+
       const user = await prisma.userDetails.findUnique({
         where: {
           user_id: userId,
@@ -27,6 +36,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
 
+      await redis.set(cacheKey, user, { ex: CACHE_TTL });
       return NextResponse.json(user, { status: 200 });
     } else {
       return NextResponse.json(
