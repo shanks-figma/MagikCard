@@ -1,0 +1,25 @@
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
+import DashboardClient from "./dashboard-client";
+
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions);
+  if (!session) redirect("/");
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user?.email! },
+    include: { cards: { orderBy: { created_at: "desc" } } },
+  });
+
+  return (
+    <DashboardClient
+      session={session}
+      initialCards={user?.cards ?? []}
+      initialUsername={user?.username ?? null}
+      initialBio={user?.bio ?? null}
+      initialName={user?.name ?? null}
+    />
+  );
+}

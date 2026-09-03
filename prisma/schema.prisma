@@ -63,12 +63,33 @@ model User {
     id            String        @id @default(auto()) @map("_id") @db.ObjectId
     name          String?
     email         String?       @unique
+    password      String?
+    username          String?
+    usernameChangedAt DateTime?
+    bio               String?
+    links         Json?
+    socialLinks   Json?
     created_at    DateTime?     @default(now())
     emailVerified DateTime?
     image         String?
     accounts      Account[]
     sessions      Session[]
     userDetails   UserDetails[]
+    cards         Card[]
+}
+
+model Card {
+    id             String    @id @default(auto()) @map("_id") @db.ObjectId
+    name           String
+    username       String    @unique
+    redirect_url   String?
+    card_front_url String?
+    card_back_url  String?
+    created_at     DateTime  @default(now())
+    updated_at     DateTime  @updatedAt
+
+    userId String @db.ObjectId
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {

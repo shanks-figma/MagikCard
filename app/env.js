@@ -24,15 +24,9 @@ export const env = createEnv({
       // VERCEL_URL doesn't include `https` so it cant be validated as a URL
       process.env.VERCEL ? z.string() : z.string().url()
     ),
-    GOOGLE_CLIENT_ID: z.string({
-      required_error: "GOOGLE_CLIENT_ID is needed.",
-    }),
-    GOOGLE_CLIENT_SECRET: z.string({
-      required_error: "GOOGLE_CLIENT_SECRET is needed.",
-    }),
-    UPSTASH_REDIS_REST_TOKEN: z.string({
-      required_error: "UPSTASH_REDIS_REST_TOKEN is needed.",
-    }),
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   },
 
   /**

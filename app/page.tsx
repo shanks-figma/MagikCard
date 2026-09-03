@@ -8,13 +8,8 @@ export default async function Home() {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    // return <SignInSection />;
-    redirect("https://fueler.io/shanks");
+    return <SignInSection />;
   }
 
-  return (
-    <div className="flex flex-col items-center justify-center h-screen w-full">
-      <FlippableCard session={session} />
-    </div>
-  );
+  redirect("/dashboard");
 }

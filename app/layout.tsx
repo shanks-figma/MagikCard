@@ -1,6 +1,6 @@
 import "./globals.css";
 import cx from "classnames";
-import { sfPro, inter } from "./fonts";
+import { sfPro, inter, onest } from "./fonts";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import AuthProvider from "@/components/contexts/auth-provider";
 import NavBar from "@/components/layout/navbar";
@@ -26,12 +26,12 @@ export default async function RootLayout({
   return (
     <AuthProvider>
       <html lang="en">
-        <body className={cx(sfPro.variable, inter.variable)}>
+        <body className={cx(sfPro.variable, inter.variable, onest.variable)}>
           {/* <div className="fixed h-screen w-full" /> */}
           {/* <Suspense fallback="...">
             <NavBar session={session} />
           </Suspense> */}
-          <main className="flex h-screen w-full flex-col items-center justify-center">
+          <main className="flex min-h-screen w-full flex-col">
             {children}
           </main>
           {/* <Footer /> */}
