@@ -23,6 +23,5 @@ export default async function ProfilePage({ params }: { params: { username: stri
 
   const isOwner = session?.user?.email === user.email;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return <ProfileView user={user as any} isOwner={isOwner} />;
 }
