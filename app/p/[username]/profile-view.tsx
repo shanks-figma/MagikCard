@@ -238,11 +238,30 @@ function ShareButton({ username }: { username: string }) {
   );
 }
 
-const ArrowIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" className="shrink-0">
+const ArrowIcon = ({ size = 15 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className="shrink-0">
     <path d="M3 13L13 3M13 3H7M13 3V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
+
+/**
+ * Link/social card chrome, taken from the Figma source
+ * (file 908HJB70mczjd2mdUvU66K, node 638:64).
+ *
+ * There are no drop shadows here — `effects` is empty on every node in that
+ * design. The depth comes from a gradient fill plus a 1px *gradient* stroke.
+ * Because the stroke is a gradient it can't be a CSS `border`, so it's drawn
+ * as a 1px gradient-filled wrapper around the card (the same technique the
+ * social icons below already use).
+ *
+ * Figma's own code export flattens the gradient stroke to a solid #898989 —
+ * these values come from reading the node's paints directly.
+ */
+const CARD_FILL = "linear-gradient(to top, rgba(96,100,105,0.2), rgba(206,210,215,0.2))";
+const CARD_STROKE = "linear-gradient(to bottom, rgba(137,137,137,0.1), rgba(239,239,239,0.1))";
+const cardOuter = { padding: 1, borderRadius: 13, background: CARD_STROKE } as const;
+const cardInner = { borderRadius: 12, background: CARD_FILL } as const;
+const THUMB_SIZE = 42.85; // Figma: 42.854px
 
 export default function ProfileView({
   user,
@@ -367,16 +386,18 @@ export default function ProfileView({
 
         {/* Links */}
         {externalLinks.filter((l) => l.heading && l.url).length > 0 && (
-          <section className="space-y-3">
+          <section className="flex flex-col gap-3">
+            <p className="text-[18px] text-white">All links</p>
+            <div className="flex flex-col gap-4">
             {externalLinks.filter((l) => l.heading && l.url).map((lk, i) => {
               const href = normalizeUrl(lk.url);
               const ytEmbed = getYouTubeEmbedUrl(lk.url);
               const spEmbed = getSpotifyEmbedUrl(lk.url);
-              const isFeatured = i === 0;
 
               if (ytEmbed) {
                 return (
-                  <div key={i} className="rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.04]">
+                  <div key={i} style={cardOuter}>
+                  <div className="overflow-hidden" style={cardInner}>
                     <div className="px-4 pt-4 pb-2 flex items-center gap-2">
                       <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" className="text-red-500 shrink-0"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                       <p className="text-sm font-semibold text-white flex-1 truncate">{lk.heading}</p>
@@ -397,13 +418,15 @@ export default function ProfileView({
                       <p className="px-4 pb-3 pt-1 text-xs text-white/40">{lk.description}</p>
                     )}
                   </div>
+                  </div>
                 );
               }
 
               if (spEmbed) {
                 const isTrack = lk.url.includes("/track/");
                 return (
-                  <div key={i} className="rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.04]">
+                  <div key={i} style={cardOuter}>
+                  <div className="overflow-hidden" style={cardInner}>
                     <div className="px-4 pt-4 pb-2 flex items-center gap-2">
                       <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" className="text-green-500 shrink-0"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
                       <p className="text-sm font-semibold text-white flex-1 truncate">{lk.heading}</p>
@@ -426,46 +449,46 @@ export default function ProfileView({
                       <p className="px-4 pb-3 text-xs text-white/40">{lk.description}</p>
                     )}
                   </div>
+                  </div>
                 );
               }
 
-              // Regular link card
-              if (isFeatured) {
-                return (
-                  <a key={i} href={href} target="_blank" rel="noopener noreferrer"
+              // Regular link card. One treatment for every link — the design has
+              // no "featured" variant, and the previous one was assigned by array
+              // position (i === 0) rather than by intent.
+              return (
+                <div key={i} style={cardOuter}>
+                  <a href={href} target="_blank" rel="noopener noreferrer"
                     onClick={() => trackClick(user.username ?? "", lk.url)}
-                    className="flex items-center gap-4 bg-white/[0.07] hover:bg-white/[0.10] border border-white/[0.08] rounded-2xl px-4 py-4 transition group w-full">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={getFavicon(lk.url)} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 bg-white/10"
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    style={cardInner}
+                    className="flex items-center gap-[11px] px-3 py-2 hover:brightness-125 transition">
+                    {/* The tile always renders, even when the favicon 404s, so the
+                        label edges stay aligned down the whole list. */}
+                    <div
+                      className="shrink-0 flex items-center justify-center overflow-hidden"
+                      style={{ width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 12, background: "rgba(235,235,235,0.1)" }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={getFavicon(lk.url)} alt="" className="w-6 h-6 object-contain"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-base font-semibold text-white truncate">{lk.heading}</p>
+                      <p
+                        className="text-[16px] font-medium text-white truncate"
+                        style={{ fontFamily: "var(--font-onest), sans-serif", lineHeight: "18px" }}
+                      >
+                        {lk.heading}
+                      </p>
                       {lk.description && (
-                        <p className="text-xs text-white/50 mt-0.5 truncate">{lk.description}</p>
+                        <p className="text-xs text-white/50 mt-1 truncate">{lk.description}</p>
                       )}
                     </div>
-                    <ArrowIcon />
+                    <ArrowIcon size={20} />
                   </a>
-                );
-              }
-
-              return (
-                <a key={i} href={href} target="_blank" rel="noopener noreferrer"
-                  onClick={() => trackClick(user.username ?? "", lk.url)}
-                  className="flex items-center gap-3 bg-white/[0.07] hover:bg-white/[0.10] border border-white/[0.08] rounded-2xl px-4 py-3.5 transition group">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={getFavicon(lk.url)} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0 bg-white/10"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white/90 truncate">{lk.heading}</p>
-                    {lk.description && (
-                      <p className="text-xs text-white/40 mt-0.5 truncate">{lk.description}</p>
-                    )}
-                  </div>
-                  <ArrowIcon />
-                </a>
+                </div>
               );
             })}
+            </div>
           </section>
         )}
 

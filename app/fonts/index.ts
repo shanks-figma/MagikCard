@@ -14,5 +14,6 @@ export const inter = Inter({
 export const onest = Onest({
   variable: "--font-onest",
   subsets: ["latin"],
-  weight: ["600"],
+  // 500 is the link-card label weight in the Figma source ("Onest:Medium").
+  weight: ["500", "600"],
 });
