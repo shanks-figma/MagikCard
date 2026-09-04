@@ -257,7 +257,7 @@ const ArrowIcon = ({ size = 15 }: { size?: number }) => (
  * Figma's own code export flattens the gradient stroke to a solid #898989 —
  * these values come from reading the node's paints directly.
  */
-const CARD_FILL = "linear-gradient(to top, rgba(96,100,105,0.2), rgba(206,210,215,0.2))";
+const CARD_FILL = "linear-gradient(to top, rgba(96,100,105,0.1), rgba(206,210,215,0.1))";
 const CARD_STROKE = "linear-gradient(to bottom, rgba(137,137,137,0.1), rgba(239,239,239,0.1))";
 const cardOuter = { padding: 1, borderRadius: 13, background: CARD_STROKE } as const;
 const cardInner = { borderRadius: 12, background: CARD_FILL } as const;
