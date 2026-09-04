@@ -245,20 +245,16 @@ const ArrowIcon = ({ size = 15 }: { size?: number }) => (
 );
 
 /**
- * Link/social card chrome, taken from the Figma source
- * (file 908HJB70mczjd2mdUvU66K, node 638:64).
+ * Link card chrome — matched to the social-icon chip's own styling (below,
+ * in the Social links section) rather than the Figma link-card node
+ * (638:64/952:28), which uses a different, more translucent gradient stroke.
  *
- * There are no drop shadows here — `effects` is empty on every node in that
- * design. The depth comes from a gradient fill plus a 1px *gradient* stroke.
- * Because the stroke is a gradient it can't be a CSS `border`, so it's drawn
- * as a 1px gradient-filled wrapper around the card (the same technique the
- * social icons below already use).
- *
- * Figma's own code export flattens the gradient stroke to a solid #898989 —
- * these values come from reading the node's paints directly.
+ * Two-layer wrapper, same shape the social chips use:
+ *  - outer: 1px padding + a solid dark-gray gradient border
+ *  - inner: a translucent gradient fill stacked over solid black
  */
-const CARD_FILL = "linear-gradient(to top, rgba(96,100,105,0.1), rgba(206,210,215,0.1))";
-const CARD_STROKE = "linear-gradient(to bottom, rgba(137,137,137,0.1), rgba(239,239,239,0.1))";
+const CARD_FILL = "linear-gradient(to bottom, rgba(206,210,215,0.2), rgba(96,100,105,0.2)), #000000";
+const CARD_STROKE = "linear-gradient(to bottom, #323334, #292A2A)";
 const cardOuter = { padding: 1, borderRadius: 13, background: CARD_STROKE } as const;
 const cardInner = { borderRadius: 12, background: CARD_FILL } as const;
 const THUMB_SIZE = 42.85; // Figma: 42.854px
