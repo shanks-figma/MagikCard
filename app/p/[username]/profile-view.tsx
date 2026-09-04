@@ -157,12 +157,17 @@ function QRModal({ username, onClose }: { username: string; onClose: () => void 
   );
 }
 
+// "style" is optional and defaults to "row" so links saved before this
+// existed keep rendering exactly as they always have.
+export type LinkStyle = "row" | "compact" | "featured" | "grid";
+export type LinkItem = { heading: string; url: string; description?: string; style?: LinkStyle };
+
 type User = {
   name: string | null;
   username: string | null;
   bio: string | null;
   image: string | null;
-  links?: { heading: string; url: string; description?: string }[] | null;
+  links?: LinkItem[] | null;
   socialLinks?: Record<string, string> | null;
 };
 
@@ -258,6 +263,135 @@ const CARD_STROKE = "linear-gradient(to bottom, #323334, #292A2A)";
 const cardOuter = { padding: 1, borderRadius: 13, background: CARD_STROKE } as const;
 const cardInner = { borderRadius: 12, background: CARD_FILL } as const;
 const THUMB_SIZE = 42.85; // Figma: 42.854px
+
+const onestStyle = { fontFamily: "var(--font-onest), sans-serif" } as const;
+
+function LinkThumb({ url, size, radius = 12 }: { url: string; size: number; radius?: number }) {
+  return (
+    <div
+      className="shrink-0 flex items-center justify-center overflow-hidden"
+      style={{ width: size, height: size, borderRadius: radius, background: "rgba(235,235,235,0.1)" }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={getFavicon(url)}
+        alt=""
+        className="object-contain"
+        style={{ width: size * 0.56, height: size * 0.56 }}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Renders one link in one of four styles. All four share the same card
+ * chrome (cardOuter/cardInner) so switching styles never changes the "does
+ * this look like part of the same page" answer — only density and emphasis
+ * change.
+ *
+ *  row      — the default. Thumbnail + title + description, one per row.
+ *  compact  — title only, smaller thumbnail, for lists with many links.
+ *  featured — bigger thumbnail and type, for the one link that matters most.
+ *  grid     — square tile, two per row (via flex-wrap on the parent), for a
+ *             portfolio/gallery feel rather than a list.
+ */
+function LinkCard({
+  lk,
+  href,
+  onClick,
+}: {
+  lk: LinkItem;
+  href: string;
+  onClick: () => void;
+}) {
+  const style = lk.style ?? "row";
+
+  if (style === "grid") {
+    return (
+      <div style={{ ...cardOuter, flex: "0 0 calc(50% - 6px)" }}>
+        <a
+          href={href} target="_blank" rel="noopener noreferrer" onClick={onClick}
+          style={cardInner}
+          className="flex flex-col items-center text-center gap-2 px-3 pt-4 pb-3 hover:brightness-125 transition h-full"
+        >
+          <LinkThumb url={lk.url} size={40} />
+          <p
+            className="text-[13px] font-medium text-white leading-[16px] line-clamp-2 break-words"
+            style={onestStyle}
+          >
+            {lk.heading}
+          </p>
+        </a>
+      </div>
+    );
+  }
+
+  if (style === "compact") {
+    return (
+      <div style={{ ...cardOuter, flex: "0 0 100%" }}>
+        <a
+          href={href} target="_blank" rel="noopener noreferrer" onClick={onClick}
+          style={cardInner}
+          className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 hover:brightness-125 transition"
+        >
+          <LinkThumb url={lk.url} size={28} radius={9} />
+          <p className="flex-1 min-w-0 text-[14px] font-medium text-white truncate" style={{ ...onestStyle, lineHeight: "16px" }}>
+            {lk.heading}
+          </p>
+          <ArrowIcon size={16} />
+        </a>
+      </div>
+    );
+  }
+
+  if (style === "featured") {
+    return (
+      <div style={{ ...cardOuter, flex: "0 0 100%" }}>
+        <a
+          href={href} target="_blank" rel="noopener noreferrer" onClick={onClick}
+          style={cardInner}
+          className="flex items-center gap-4 pl-3 pr-4 py-3 hover:brightness-125 transition"
+        >
+          <LinkThumb url={lk.url} size={56} />
+          <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+            <p className="text-[18px] font-semibold text-white truncate" style={{ ...onestStyle, lineHeight: "22px" }}>
+              {lk.heading}
+            </p>
+            {lk.description && (
+              <p className="text-[13px] font-normal line-clamp-2" style={{ ...onestStyle, lineHeight: "17px", color: "#9B9B9B" }}>
+                {lk.description}
+              </p>
+            )}
+          </div>
+          <ArrowIcon size={22} />
+        </a>
+      </div>
+    );
+  }
+
+  // "row" — the existing default card, unchanged.
+  return (
+    <div style={{ ...cardOuter, flex: "0 0 100%" }}>
+      <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick}
+        style={cardInner}
+        className="flex items-center gap-[11px] pl-2 pr-3 py-2 hover:brightness-125 transition">
+        <LinkThumb url={lk.url} size={THUMB_SIZE} />
+        <div className="flex-1 min-w-0 flex flex-col justify-center gap-[2px]">
+          <p className="text-[16px] font-medium text-white truncate" style={{ ...onestStyle, lineHeight: "18px" }}>
+            {lk.heading}
+          </p>
+          {lk.description && (
+            <p className="text-[12px] font-normal truncate" style={{ ...onestStyle, lineHeight: "18px", color: "#9B9B9B" }}>
+              {lk.description}
+            </p>
+          )}
+        </div>
+        <ArrowIcon size={20} />
+      </a>
+    </div>
+  );
+}
 
 export default function ProfileView({
   user,
@@ -384,7 +518,10 @@ export default function ProfileView({
         {externalLinks.filter((l) => l.heading && l.url).length > 0 && (
           <section className="flex flex-col gap-3">
             <p className="text-[18px] text-white">All links</p>
-            <div className="flex flex-col gap-4">
+            {/* flex-wrap, not flex-col: grid-style cards report a half-width
+                flex-basis and sit two-up, everything else reports full width
+                and wraps to its own line — order is preserved either way. */}
+            <div className="flex flex-wrap gap-3">
             {externalLinks.filter((l) => l.heading && l.url).map((lk, i) => {
               const href = normalizeUrl(lk.url);
               const ytEmbed = getYouTubeEmbedUrl(lk.url);
@@ -392,7 +529,7 @@ export default function ProfileView({
 
               if (ytEmbed) {
                 return (
-                  <div key={i} style={cardOuter}>
+                  <div key={i} style={{ ...cardOuter, flex: "0 0 100%" }}>
                   <div className="overflow-hidden" style={cardInner}>
                     <div className="px-4 pt-4 pb-2 flex items-center gap-2">
                       <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" className="text-red-500 shrink-0"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
@@ -421,7 +558,7 @@ export default function ProfileView({
               if (spEmbed) {
                 const isTrack = lk.url.includes("/track/");
                 return (
-                  <div key={i} style={cardOuter}>
+                  <div key={i} style={{ ...cardOuter, flex: "0 0 100%" }}>
                   <div className="overflow-hidden" style={cardInner}>
                     <div className="px-4 pt-4 pb-2 flex items-center gap-2">
                       <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" className="text-green-500 shrink-0"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
@@ -449,44 +586,13 @@ export default function ProfileView({
                 );
               }
 
-              // Regular link card. One treatment for every link — the design has
-              // no "featured" variant, and the previous one was assigned by array
-              // position (i === 0) rather than by intent.
               return (
-                <div key={i} style={cardOuter}>
-                  <a href={href} target="_blank" rel="noopener noreferrer"
-                    onClick={() => trackClick(user.username ?? "", lk.url)}
-                    style={cardInner}
-                    className="flex items-center gap-[11px] pl-2 pr-3 py-2 hover:brightness-125 transition">
-                    {/* The tile always renders, even when the favicon 404s, so the
-                        label edges stay aligned down the whole list. */}
-                    <div
-                      className="shrink-0 flex items-center justify-center overflow-hidden"
-                      style={{ width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 12, background: "rgba(235,235,235,0.1)" }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={getFavicon(lk.url)} alt="" className="w-6 h-6 object-contain"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                    </div>
-                    <div className="flex-1 min-w-0 flex flex-col justify-center gap-[2px]">
-                      <p
-                        className="text-[16px] font-medium text-white truncate"
-                        style={{ fontFamily: "var(--font-onest), sans-serif", lineHeight: "18px" }}
-                      >
-                        {lk.heading}
-                      </p>
-                      {lk.description && (
-                        <p
-                          className="text-[12px] font-normal truncate"
-                          style={{ fontFamily: "var(--font-onest), sans-serif", lineHeight: "18px", color: "#9B9B9B" }}
-                        >
-                          {lk.description}
-                        </p>
-                      )}
-                    </div>
-                    <ArrowIcon size={20} />
-                  </a>
-                </div>
+                <LinkCard
+                  key={i}
+                  lk={lk}
+                  href={href}
+                  onClick={() => trackClick(user.username ?? "", lk.url)}
+                />
               );
             })}
             </div>

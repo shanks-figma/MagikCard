@@ -2,7 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ProfileView from "../profile-view";
+import ProfileView, { type LinkStyle } from "../profile-view";
+
+const LINK_STYLES: { value: LinkStyle; label: string }[] = [
+  { value: "row", label: "Row" },
+  { value: "compact", label: "Compact" },
+  { value: "featured", label: "Featured" },
+  { value: "grid", label: "Grid" },
+];
 
 const SOCIAL_PLATFORMS = [
   { key: "linkedin",  label: "LinkedIn",  placeholder: "linkedin.com/in/yourhandle", color: "#0A66C2" },
@@ -39,7 +46,7 @@ function normalizeUrl(url: string): string {
   return `https://${url}`;
 }
 
-type Link = { heading: string; url: string; description?: string };
+type Link = { heading: string; url: string; description?: string; style?: LinkStyle };
 
 const inputClass =
   "w-full bg-white/[0.06] text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl px-3 py-[10px] h-11 transition";
@@ -142,6 +149,8 @@ export default function EditClient({
   };
   const updateLink = (i: number, field: "heading" | "url" | "description", val: string) =>
     setLinks((l) => l.map((lk, idx) => (idx === i ? { ...lk, [field]: val } : lk)));
+  const setLinkStyle = (i: number, style: LinkStyle) =>
+    setLinks((l) => l.map((lk, idx) => (idx === i ? { ...lk, style } : lk)));
 
   const handleSave = async () => {
     setSaving(true);
@@ -445,6 +454,22 @@ export default function EditClient({
                           value={lk.description ?? ""}
                           onChange={(e) => updateLink(i, "description", e.target.value)}
                         />
+                      </div>
+                      <div className="flex items-center gap-1 mt-2.5 p-0.5 rounded-full bg-white/[0.05] border border-white/[0.06] w-fit">
+                        {LINK_STYLES.map((s) => (
+                          <button
+                            key={s.value}
+                            type="button"
+                            onClick={() => setLinkStyle(i, s.value)}
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition ${
+                              (lk.style ?? "row") === s.value
+                                ? "bg-white text-black"
+                                : "text-white/40 hover:text-white/70"
+                            }`}
+                          >
+                            {s.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   ))}
