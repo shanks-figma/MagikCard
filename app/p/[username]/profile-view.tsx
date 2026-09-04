@@ -307,8 +307,8 @@ export default function ProfileView({
 
       {/* ── Header gradient ── */}
       <div
-        className="relative pb-10 pt-14 flex flex-col items-center text-center px-6"
-        style={{ background: `radial-gradient(circle 380px at 50% 18%, rgba(${accentRgb},0.85) 0%, rgba(${accentRgb},0.35) 38%, #000000 78%)`, transition: "background 0.6s ease" }}
+        className="relative pb-10 pt-14 flex flex-col items-center text-center px-6 overflow-hidden"
+        style={{ background: `radial-gradient(circle 100vw at 50% 18%, rgba(${accentRgb},0.85) 0%, rgba(${accentRgb},0.35) 38%, #000000 78%)`, transition: "background 0.6s ease" }}
       >
         {/* Avatar */}
         <div className="relative mb-8 overflow-visible">
