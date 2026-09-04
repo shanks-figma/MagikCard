@@ -159,8 +159,10 @@ function QRModal({ username, onClose }: { username: string; onClose: () => void 
 
 // "style" is optional and defaults to "row" so links saved before this
 // existed keep rendering exactly as they always have.
-export type LinkStyle = "row" | "compact" | "featured" | "grid";
-export type LinkItem = { heading: string; url: string; description?: string; style?: LinkStyle };
+export type LinkStyle = "row" | "compact" | "featured" | "grid" | "rich";
+// `image` only applies to (and is only editable for) the "rich" style — a
+// manually-set banner, not an auto-fetched Open Graph preview.
+export type LinkItem = { heading: string; url: string; description?: string; style?: LinkStyle; image?: string };
 
 type User = {
   name: string | null;
@@ -285,6 +287,54 @@ function LinkThumb({ url, size, radius = 12 }: { url: string; size: number; radi
 }
 
 /**
+ * Banner for the "rich" link style. Falls back to the favicon tile — via
+ * React state, not an imperative style mutation on error — whenever no
+ * image URL is set, or the one that's set fails to load. That keeps a
+ * failed banner visually identical to "no banner set" instead of leaving
+ * an empty box with the browser's own broken-image glyph in the corner.
+ *
+ * <img onError> alone isn't enough: for an image the browser resolves as
+ * broken before React finishes mounting (e.g. a bad/unreachable URL that
+ * fails fast), the error event can fire before the listener is attached —
+ * the same class of bug as the avatar dominant-color extraction elsewhere
+ * in this file. Checked directly: a genuinely broken image reported
+ * img.complete === true, naturalWidth === 0 with onError never having run.
+ * So on mount we also check img.complete/naturalWidth directly as a second
+ * trigger, exactly like onImageLoad's fallback for the avatar.
+ */
+function RichBanner({ url, image }: { url: string; image?: string }) {
+  const [failed, setFailed] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    setFailed(false); // a new image URL deserves a fresh attempt
+  }, [image]);
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0) setFailed(true);
+  }, [image]);
+  const showImage = !!image && !failed;
+  return (
+    <div
+      className="w-full rounded-xl overflow-hidden bg-white/[0.06] flex items-center justify-center"
+      style={{ aspectRatio: "337.065 / 217.065" }}
+    >
+      {showImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          ref={imgRef}
+          src={image}
+          alt=""
+          className="w-full h-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <LinkThumb url={url} size={40} />
+      )}
+    </div>
+  );
+}
+
+/**
  * Renders one link in one of four styles. All four share the same card
  * chrome (cardOuter/cardInner) so switching styles never changes the "does
  * this look like part of the same page" answer — only density and emphasis
@@ -306,6 +356,38 @@ function LinkCard({
   onClick: () => void;
 }) {
   const style = lk.style ?? "row";
+
+  if (style === "rich") {
+    return (
+      <div style={{ ...cardOuter, flex: "0 0 100%" }}>
+        <a
+          href={href} target="_blank" rel="noopener noreferrer" onClick={onClick}
+          style={cardInner}
+          className="flex flex-col gap-[11px] p-3 hover:brightness-125 transition"
+        >
+          {/* Figma: image w/h ratio 337.06/217.06 ≈ 1.553. A manually-set
+              banner (see LinkItem.image) — not an auto-fetched OG preview. */}
+          <RichBanner url={lk.url} image={lk.image} />
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-2 px-1">
+              <p className="text-[16px] font-medium text-white truncate" style={{ ...onestStyle, lineHeight: "18px" }}>
+                {lk.heading}
+              </p>
+              <ArrowIcon size={20} />
+            </div>
+            {lk.description && (
+              <p
+                className="px-1 text-[13px] font-light truncate"
+                style={{ ...onestStyle, lineHeight: "16px", color: "#9B9B9B" }}
+              >
+                {lk.description}
+              </p>
+            )}
+          </div>
+        </a>
+      </div>
+    );
+  }
 
   if (style === "grid") {
     return (

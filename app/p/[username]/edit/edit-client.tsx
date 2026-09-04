@@ -9,6 +9,7 @@ const LINK_STYLES: { value: LinkStyle; label: string }[] = [
   { value: "compact", label: "Compact" },
   { value: "featured", label: "Featured" },
   { value: "grid", label: "Grid" },
+  { value: "rich", label: "Rich" },
 ];
 
 const SOCIAL_PLATFORMS = [
@@ -46,7 +47,7 @@ function normalizeUrl(url: string): string {
   return `https://${url}`;
 }
 
-type Link = { heading: string; url: string; description?: string; style?: LinkStyle };
+type Link = { heading: string; url: string; description?: string; style?: LinkStyle; image?: string };
 
 const inputClass =
   "w-full bg-white/[0.06] text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl px-3 py-[10px] h-11 transition";
@@ -147,7 +148,7 @@ export default function EditClient({
       return arr;
     });
   };
-  const updateLink = (i: number, field: "heading" | "url" | "description", val: string) =>
+  const updateLink = (i: number, field: "heading" | "url" | "description" | "image", val: string) =>
     setLinks((l) => l.map((lk, idx) => (idx === i ? { ...lk, [field]: val } : lk)));
   const setLinkStyle = (i: number, style: LinkStyle) =>
     setLinks((l) => l.map((lk, idx) => (idx === i ? { ...lk, style } : lk)));
@@ -454,6 +455,14 @@ export default function EditClient({
                           value={lk.description ?? ""}
                           onChange={(e) => updateLink(i, "description", e.target.value)}
                         />
+                        {(lk.style ?? "row") === "rich" && (
+                          <input
+                            placeholder="Banner image URL"
+                            className={`${inputClass} sm:col-span-2`}
+                            value={lk.image ?? ""}
+                            onChange={(e) => updateLink(i, "image", e.target.value)}
+                          />
+                        )}
                       </div>
                       <div className="flex items-center gap-1 mt-2.5 p-0.5 rounded-full bg-white/[0.05] border border-white/[0.06] w-fit">
                         {LINK_STYLES.map((s) => (
