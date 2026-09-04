@@ -3,30 +3,101 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 
-function extractDominantColor(img: HTMLImageElement): string {
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = 40;
-    canvas.height = 40;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return "122,26,10";
-    ctx.drawImage(img, 0, 0, 40, 40);
-    const data = ctx.getImageData(0, 0, 40, 40).data;
-    let r = 0, g = 0, b = 0, count = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const a = data[i + 3];
-      if (a < 128) continue; // skip transparent
-      r += data[i]; g += data[i + 1]; b += data[i + 2];
-      count++;
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      default: h = (r - g) / d + 4;
     }
-    if (!count) return "122,26,10";
-    // Boost saturation by pulling towards dominant channel
-    const ar = Math.round(r / count);
-    const ag = Math.round(g / count);
-    const ab = Math.round(b / count);
-    return `${ar},${ag},${ab}`;
+    h /= 6;
+  }
+  return [h * 360, s, l];
+}
+
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  h /= 360;
+  let r: number, g: number, b: number;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+// Picks the most common *vivid* hue in the image — bucketing pixels by hue and
+// weighting each pixel's vote by its saturation — rather than averaging every
+// pixel. A plain average gets dragged toward gray by the white background and
+// black shadows/outlines that most avatars have; this explicitly skips
+// near-white, near-black and low-saturation (grayscale) pixels so those never
+// get a vote, then reports the winning hue's own average color.
+function extractDominantColor(img: HTMLImageElement): string {
+  const FALLBACK = "122,26,10";
+  try {
+    const size = 48;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return FALLBACK;
+    ctx.drawImage(img, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
+
+    const BUCKETS = 24; // 15° hue slices
+    const weight = new Array(BUCKETS).fill(0);
+    const sumR = new Array(BUCKETS).fill(0);
+    const sumG = new Array(BUCKETS).fill(0);
+    const sumB = new Array(BUCKETS).fill(0);
+
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] < 128) continue; // skip transparent
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      const [h, s, l] = rgbToHsl(r, g, b);
+      if (s < 0.18 || l < 0.08 || l > 0.92) continue; // skip white/black/gray family
+      const bucket = Math.min(BUCKETS - 1, Math.floor(h / (360 / BUCKETS)));
+      weight[bucket] += s;
+      sumR[bucket] += r * s;
+      sumG[bucket] += g * s;
+      sumB[bucket] += b * s;
+    }
+
+    let best = -1, bestWeight = 0;
+    for (let i = 0; i < BUCKETS; i++) {
+      if (weight[i] > bestWeight) { bestWeight = weight[i]; best = i; }
+    }
+    if (best === -1) return FALLBACK; // image is entirely neutral — nothing vivid to pick
+
+    const r = sumR[best] / weight[best];
+    const g = sumG[best] / weight[best];
+    const b = sumB[best] / weight[best];
+
+    // Nudge into a pleasant range for a background glow — saturated enough to
+    // read as "color", not so light/dark it disappears against black.
+    const [h, s, l] = rgbToHsl(r, g, b);
+    const [nr, ng, nb] = hslToRgb(h, Math.max(s, 0.55), Math.min(0.5, Math.max(l, 0.28)));
+    return `${nr},${ng},${nb}`;
   } catch {
-    return "122,26,10";
+    return FALLBACK;
   }
 }
 
@@ -188,10 +259,19 @@ export default function ProfileView({
 
   // Dynamic gradient color extracted from profile image
   const [accentRgb, setAccentRgb] = useState("122,26,10");
+  const avatarRef = useRef<HTMLImageElement>(null);
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const color = extractDominantColor(e.currentTarget);
-    setAccentRgb(color);
+    setAccentRgb(extractDominantColor(e.currentTarget));
   }, []);
+  // <img onLoad> never fires for an already-cached image — the browser can dispatch
+  // "load" before React attaches the listener, so on mount we also check img.complete
+  // directly and extract immediately if the image loaded before we got here.
+  useEffect(() => {
+    const img = avatarRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setAccentRgb(extractDominantColor(img));
+    }
+  }, [user.image]);
 
   const externalLinks = (user.links as { heading: string; url: string; description?: string }[] | null) ?? [];
   const socialLinks = (user.socialLinks as Record<string, string> | null) ?? {};
@@ -234,7 +314,7 @@ export default function ProfileView({
         <div className="relative mb-8 overflow-visible">
           {user.image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.image} alt={displayName} className="w-36 h-36 rounded-[30px] object-cover shadow-xl" crossOrigin="anonymous" onLoad={onImageLoad} />
+            <img ref={avatarRef} src={user.image} alt={displayName} className="w-36 h-36 rounded-[30px] object-cover shadow-xl" crossOrigin="anonymous" onLoad={onImageLoad} />
           ) : (
             <div className="w-36 h-36 rounded-[30px] bg-gradient-to-br from-orange-400 to-red-700 flex items-center justify-center shadow-xl text-3xl font-bold text-white">
               {initials}
