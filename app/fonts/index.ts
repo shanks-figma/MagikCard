@@ -6,6 +6,7 @@ export const sfPro = localFont({
   variable: "--font-sf",
 });
 
+
 export const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -14,6 +15,7 @@ export const inter = Inter({
 export const onest = Onest({
   variable: "--font-onest",
   subsets: ["latin"],
-  // 500 is the link-card label weight in the Figma source ("Onest:Medium").
-  weight: ["500", "600"],
+  // 400/500 are the link-card description/label weights in the Figma source
+  // ("Onest:Regular" / "Onest:Medium").
+  weight: ["400", "500", "600"],
 });

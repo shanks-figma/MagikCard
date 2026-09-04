@@ -461,7 +461,7 @@ export default function ProfileView({
                   <a href={href} target="_blank" rel="noopener noreferrer"
                     onClick={() => trackClick(user.username ?? "", lk.url)}
                     style={cardInner}
-                    className="flex items-center gap-[11px] px-3 py-2 hover:brightness-125 transition">
+                    className="flex items-center gap-[11px] pl-2 pr-3 py-2 hover:brightness-125 transition">
                     {/* The tile always renders, even when the favicon 404s, so the
                         label edges stay aligned down the whole list. */}
                     <div
@@ -472,7 +472,7 @@ export default function ProfileView({
                       <img src={getFavicon(lk.url)} alt="" className="w-6 h-6 object-contain"
                         onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 flex flex-col justify-center gap-[2px]">
                       <p
                         className="text-[16px] font-medium text-white truncate"
                         style={{ fontFamily: "var(--font-onest), sans-serif", lineHeight: "18px" }}
@@ -480,7 +480,12 @@ export default function ProfileView({
                         {lk.heading}
                       </p>
                       {lk.description && (
-                        <p className="text-xs text-white/50 mt-1 truncate">{lk.description}</p>
+                        <p
+                          className="text-[12px] font-normal truncate"
+                          style={{ fontFamily: "var(--font-onest), sans-serif", lineHeight: "18px", color: "#9B9B9B" }}
+                        >
+                          {lk.description}
+                        </p>
                       )}
                     </div>
                     <ArrowIcon size={20} />
