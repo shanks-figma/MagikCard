@@ -307,7 +307,7 @@ export default function ProfileView({
 
       {/* ── Header gradient ── */}
       <div
-        className="relative pb-10 pt-14 flex flex-col items-center text-center px-6 overflow-hidden"
+        className="relative pb-6 pt-14 flex flex-col items-center text-center px-6 overflow-hidden"
         style={{ background: `radial-gradient(circle 100vw at 50% 18%, rgba(${accentRgb},0.85) 0%, rgba(${accentRgb},0.35) 38%, #000000 78%)`, transition: "background 0.6s ease" }}
       >
         {/* Avatar */}
@@ -331,6 +331,21 @@ export default function ProfileView({
         <h1 className="mt-6 text-2xl font-bold text-white">{displayName}</h1>
         {user.bio && (
           <p className="mt-2 text-sm text-white/60 max-w-xs leading-relaxed">{user.bio}</p>
+        )}
+
+        {/* The one high-emphasis action on the page: this is a business card,
+            so taking it with you is the primary job. */}
+        {user.username && (
+          <a
+            href={`/api/vcard/${user.username}`}
+            className="mt-6 w-full max-w-xs flex items-center justify-center gap-2 h-12 rounded-2xl bg-white text-black text-[15px] font-semibold hover:bg-white/90 active:scale-[0.98] transition"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M19 8v6M22 11h-6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Save contact
+          </a>
         )}
       </div>
 
