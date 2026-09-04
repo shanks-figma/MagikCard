@@ -176,9 +176,12 @@ const ArrowIcon = () => (
 export default function ProfileView({
   user,
   isOwner = false,
+  preview = false,
 }: {
   user: User;
   isOwner?: boolean;
+  /** Renders inside the edit-page preview frame: fills its container and is inert (no clicks / click-tracking). */
+  preview?: boolean;
 }) {
   const displayName = user.name ?? `@${user.username}`;
   const initials = displayName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -196,7 +199,11 @@ export default function ProfileView({
   const [showQR, setShowQR] = useState(false);
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div
+      className={`bg-black text-white ${
+        preview ? "h-full pointer-events-none select-none" : "min-h-screen"
+      }`}
+    >
       {/* ── Owner edit bar ── */}
       {isOwner && (
         <div className="sticky top-0 z-20 flex items-center justify-between px-5 py-3 bg-black/60 backdrop-blur border-b border-white/10">

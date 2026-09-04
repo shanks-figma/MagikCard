@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ProfileView from "../profile-view";
 
 const SOCIAL_PLATFORMS = [
   { key: "linkedin",  label: "LinkedIn",  placeholder: "linkedin.com/in/yourhandle", color: "#0A66C2" },
@@ -40,6 +41,35 @@ function normalizeUrl(url: string): string {
 
 type Link = { heading: string; url: string; description?: string };
 
+const inputClass =
+  "w-full bg-white/[0.06] text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl px-3 py-[10px] h-11 transition";
+
+/** Card shell used by every section of the builder. */
+function Section({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-white/[0.07] p-5" style={{ background: "#111" }}>
+      <div className="flex items-start justify-between gap-4 mb-5">
+        <div>
+          <h2 className="text-[15px] font-semibold text-white tracking-[-0.02em]">{title}</h2>
+          {description && <p className="text-[12px] text-white/30 mt-0.5">{description}</p>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 export default function EditClient({
   username,
   initialName,
@@ -69,6 +99,7 @@ export default function EditClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [clickCounts, setClickCounts] = useState<Record<string, number>>({});
+  const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
 
   useEffect(() => {
     fetch(`/api/link-click?username=${username}`)
@@ -76,6 +107,8 @@ export default function EditClient({
       .then((data) => setClickCounts(data as Record<string, number>))
       .catch(() => {});
   }, [username]);
+
+  const totalClicks = Object.values(clickCounts).reduce((sum, n) => sum + n, 0);
 
   // 30-day lock logic
   const daysLeft = usernameChangedAt
@@ -129,253 +162,337 @@ export default function EditClient({
     setSaving(false);
   };
 
+  // What the public page will render, straight from the live form state.
+  const previewUser = {
+    name,
+    username: usernameVal,
+    bio,
+    image,
+    links,
+    socialLinks,
+  };
+
   return (
     <div className="min-h-screen w-full" style={{ background: "#0a0a0a" }}>
       {/* ── Header ── */}
-      <div className="sticky top-0 z-10 border-b border-white/[0.06]" style={{ background: "rgba(10,10,10,0.95)", backdropFilter: "blur(12px)" }}>
-        <div className="max-w-md mx-auto flex items-center gap-4 px-5 py-4">
-          <button onClick={() => router.back()} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.14] transition">
+      <div
+        className="sticky top-0 z-20 border-b border-white/[0.06]"
+        style={{ background: "rgba(10,10,10,0.95)", backdropFilter: "blur(12px)" }}
+      >
+        <div className="max-w-[1360px] mx-auto flex items-center gap-3 px-4 sm:px-6 py-3.5">
+          <button
+            onClick={() => router.back()}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.14] transition shrink-0"
+          >
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
               <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-          <h1 className="text-[18px] font-semibold text-white flex-1 text-center tracking-[-0.04em]">Edit Profile</h1>
-          <div className="w-8" />
-        </div>
-      </div>
 
-      <div className="max-w-md mx-auto px-5 pt-8 pb-36 space-y-8">
-
-        {/* ── AVATAR ── */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative">
-            {image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={image} alt="Profile" className="w-24 h-24 rounded-[20px] object-cover" />
-            ) : (
-              <div className="w-24 h-24 rounded-[20px] bg-gradient-to-br from-orange-400 to-red-700 flex items-center justify-center text-3xl font-bold text-white">
-                {(initialName || username)[0]?.toUpperCase() ?? "?"}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingImage}
-              className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:bg-white/90 transition disabled:opacity-50"
-            >
-              {uploadingImage ? (
-                <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                </svg>
-              ) : (
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
-                  <path d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 2.828L11.828 13.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 019 11z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                </svg>
-              )}
-            </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-[16px] font-semibold text-white tracking-[-0.03em] truncate">Edit Profile</h1>
+            <p className="text-[11px] text-white/30 truncate">magikcard.com/p/{usernameVal || "…"}</p>
           </div>
-          <p className="text-xs text-white/30">Tap to change photo</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="hidden"
-            onChange={handleImageChange}
-          />
-        </div>
 
-        {/* ── BASIC DETAILS ── */}
-        <div>
-          <p className="text-[14px] font-bold text-white/70 uppercase mb-4">Basic Details</p>
-          <div className="space-y-4">
-            {/* Name */}
-            <div>
-              <label className="block text-[14px] text-white/40 mb-1.5 font-medium tracking-[-0.005em]">Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                className="w-full bg-transparent text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl px-3 py-[10px] bg-white/10 h-11"
-              />
-            </div>
-            {/* Username */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[14px] text-white/40 font-medium tracking-[-0.005em]">Username</label>
-                {usernameLocked && (
-                  <span className="text-[11px] text-orange-400/80 flex items-center gap-1">
-                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                    {daysLeft}d left
-                  </span>
-                )}
-              </div>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-sm pointer-events-none">@</span>
-                <input
-                  type="text"
-                  value={usernameVal}
-                  onChange={(e) => setUsernameVal(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
-                  disabled={usernameLocked}
-                  placeholder="your-username"
-                  className={`w-full text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl pl-7 pr-3 py-[10px] bg-white/10 h-11 transition ${usernameLocked ? "opacity-40 cursor-not-allowed" : ""}`}
-                />
-              </div>
-              {usernameLocked
-                ? <p className="text-[11px] text-white/30 mt-1.5">Can change again in {daysLeft} day{daysLeft === 1 ? "" : "s"}</p>
-                : <p className="text-[11px] text-white/20 mt-1.5">Lowercase letters, numbers, - and _ only</p>
-              }
-            </div>
-            {/* Bio */}
-            <div>
-              <label className="block text-[14px] text-white/40 mb-1.5 font-medium tracking-[-0.005em]">Bio</label>
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="A short bio..."
-                rows={3}
-                className="w-full bg-white/10 text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl px-3 py-[10px] resize-none leading-relaxed"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-white/[0.08]" />
-
-        {/* ── SOCIAL LINKS ── */}
-        <div>
-          <p className="text-[14px] font-bold text-white/70 uppercase mb-4">Social</p>
-          <div className="space-y-4">
-            {SOCIAL_PLATFORMS.map((platform, i) => (
-              <div key={platform.key} className="flex items-center gap-3">
-                {/* <div className="w-11 h-11 rounded-[8px] flex items-center justify-center shrink-0" style={{ background: `${platform.color}18`, color: platform.color }}>
-                  {SOCIAL_ICONS[platform.key]}
-                </div> */}
-                <div className="flex-1 min-w-0">
-                  <label className="block text-[14px] text-white/40 mb-1.5 font-medium tracking-[-0.005em]">{platform.label}</label>
-                  <input
-                    type="text"
-                    value={socialLinks[platform.key] ?? ""}
-                    onChange={(e) => setSocialLinks((s) => ({ ...s, [platform.key]: e.target.value }))}
-                    placeholder={platform.placeholder}
-                    className="w-full bg-white/10 text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/40 truncate border border-white/10 rounded-xl px-3 py-[10px] h-11"
-                  />
-                </div>
-                {socialLinks[platform.key] && (
-                  <button
-                    onClick={() => setSocialLinks((s) => { const n = { ...s }; delete n[platform.key]; return n; })}
-                    className="text-white/20 hover:text-red-400 transition shrink-0"
-                  >
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
-                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                    </svg>
-                  </button>
-                )}
-              </div>
+          {/* Mobile edit/preview switch */}
+          <div className="xl:hidden flex items-center p-0.5 rounded-full bg-white/[0.07] border border-white/[0.08] shrink-0">
+            {(["edit", "preview"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setMobileTab(tab)}
+                className={`px-3 py-1.5 rounded-full text-[12px] font-medium capitalize transition ${
+                  mobileTab === tab ? "bg-white text-black" : "text-white/50 hover:text-white/80"
+                }`}
+              >
+                {tab}
+              </button>
             ))}
           </div>
-        </div>
 
-        <div className="border-t border-white/[0.08]" />
-
-        {/* ── EXTERNAL LINKS ── */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-[11px] font-semibold text-white/30 tracking-[0.12em] uppercase">Links</p>
-            <button
-              onClick={addLink}
-              className="flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-white bg-white/[0.07] hover:bg-white/[0.12] px-3 py-1.5 rounded-full transition"
-            >
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center justify-center gap-2 h-9 px-4 rounded-full text-[13px] font-semibold bg-white text-black hover:bg-white/90 transition disabled:opacity-50 shrink-0"
+          >
+            {saving ? (
+              <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
               </svg>
-              Add link
-            </button>
-          </div>
-
-          {links.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-white/[0.1] py-8 text-center text-white/20 text-sm" style={{ background: "#161616" }}>
-              No links yet — tap Add link
-            </div>
-          )}
-
-          {links.length > 0 && (
-            <div className="rounded-2xl overflow-hidden border border-white/[0.07]" style={{ background: "#161616" }}>
-              {links.map((lk, i) => (
-                <div key={i} className={`px-4 py-3 ${i < links.length - 1 ? "border-b border-white/[0.06]" : ""}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] text-white/30 font-semibold tracking-wide uppercase">Link {i + 1}</span>
-                    {lk.url && (clickCounts[normalizeUrl(lk.url)] ?? 0) > 0 && (
-                      <span className="flex items-center gap-1 text-[10px] text-white/40 bg-white/[0.07] border border-white/[0.08] rounded-full px-2 py-0.5">
-                        <svg width="9" height="9" fill="none" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" fill="currentColor"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                        {clickCounts[normalizeUrl(lk.url)]}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-1 ml-auto">
-                      <button onClick={() => moveLink(i, "up")} disabled={i === 0}
-                        className="text-white/20 hover:text-white/60 disabled:opacity-20 disabled:cursor-not-allowed transition p-0.5">
-                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </button>
-                      <button onClick={() => moveLink(i, "down")} disabled={i === links.length - 1}
-                        className="text-white/20 hover:text-white/60 disabled:opacity-20 disabled:cursor-not-allowed transition p-0.5">
-                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </button>
-                    </div>
-                    <button onClick={() => removeLink(i)} className="text-white/20 hover:text-red-400 transition">
-                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
-                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                      </svg>
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={lk.heading}
-                    onChange={(e) => updateLink(i, "heading", e.target.value)}
-                    placeholder="Label (e.g. Portfolio)"
-                    className="w-full bg-transparent text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl px-3 py-[10px] bg-white/10 h-11 mb-2"
-                  />
-                  <input
-                    type="text"
-                    value={lk.url}
-                    onChange={(e) => updateLink(i, "url", e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-transparent text-xs text-white/50 placeholder-white/15 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl px-3 py-[10px] bg-white/10 h-11"
-                  />
-                  <input
-                    placeholder="Short description (optional)"
-                    className="w-full bg-transparent text-xs text-white/50 placeholder-white/15 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl px-3 py-[10px] bg-white/10 h-11 mt-2"
-                    value={lk.description ?? ""}
-                    onChange={(e) => updateLink(i, "description", e.target.value)}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+            ) : "Save"}
+          </button>
         </div>
-
-        {error && (
-          <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
       </div>
 
-      {/* ── Sticky Save ── */}
-      <div className="fixed bottom-0 inset-x-0 px-5 pb-8 pt-4" style={{ background: "linear-gradient(to top, #0a0a0a 60%, transparent)" }}>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full max-w-md mx-auto flex items-center justify-center h-13 rounded-2xl text-sm font-semibold transition disabled:opacity-50"
-          style={{ background: "white", color: "black", height: "52px" }}
-        >
-          {saving ? (
-            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-            </svg>
-          ) : "Save changes"}
-        </button>
+      <div className="max-w-[1360px] mx-auto px-4 sm:px-6 py-6">
+        <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_420px] xl:gap-6 xl:items-start">
+
+          {/* ═══ LEFT — builder ═══ */}
+          <div className={`${mobileTab === "edit" ? "block" : "hidden"} xl:block space-y-5`}>
+
+            {/* ── Basic details ── */}
+            <Section title="Basic details" description="Your name, handle and bio.">
+              {/* Avatar */}
+              <div className="flex items-center gap-4 mb-5">
+                <div className="relative shrink-0">
+                  {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={image} alt="Profile" className="w-20 h-20 rounded-[18px] object-cover" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-[18px] bg-gradient-to-br from-orange-400 to-red-700 flex items-center justify-center text-2xl font-bold text-white">
+                      {(name || usernameVal)[0]?.toUpperCase() ?? "?"}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:bg-white/90 transition disabled:opacity-50"
+                  >
+                    {uploadingImage ? (
+                      <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                    ) : (
+                      <svg width="13" height="13" fill="none" viewBox="0 0 24 24">
+                        <path d="M15.232 5.232l3.536 3.536M9 11l6.586-6.586a2 2 0 012.828 2.828L11.828 13.828a2 2 0 01-1.414.586H8v-2.414A2 2 0 019 11z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white/80">Profile photo</p>
+                  <p className="text-[12px] text-white/30 mt-0.5">JPG, PNG, WEBP or GIF.</p>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="mt-2 text-[12px] font-medium text-white/60 hover:text-white bg-white/[0.07] hover:bg-white/[0.12] px-3 py-1.5 rounded-full transition disabled:opacity-50"
+                  >
+                    {uploadingImage ? "Uploading…" : image ? "Change photo" : "Upload photo"}
+                  </button>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                {/* Name */}
+                <div>
+                  <label className="block text-[13px] text-white/40 mb-1.5 font-medium tracking-[-0.005em]">Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                    className={inputClass}
+                  />
+                </div>
+                {/* Username */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[13px] text-white/40 font-medium tracking-[-0.005em]">Username</label>
+                    {usernameLocked && (
+                      <span className="text-[11px] text-orange-400/80 flex items-center gap-1">
+                        <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        {daysLeft}d left
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-sm pointer-events-none">@</span>
+                    <input
+                      type="text"
+                      value={usernameVal}
+                      onChange={(e) => setUsernameVal(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
+                      disabled={usernameLocked}
+                      placeholder="your-username"
+                      className={`${inputClass} pl-7 ${usernameLocked ? "opacity-40 cursor-not-allowed" : ""}`}
+                    />
+                  </div>
+                  {usernameLocked
+                    ? <p className="text-[11px] text-white/30 mt-1.5">Can change again in {daysLeft} day{daysLeft === 1 ? "" : "s"}</p>
+                    : <p className="text-[11px] text-white/20 mt-1.5">Lowercase letters, numbers, - and _ only</p>
+                  }
+                </div>
+                {/* Bio */}
+                <div className="sm:col-span-2">
+                  <label className="block text-[13px] text-white/40 mb-1.5 font-medium tracking-[-0.005em]">Bio</label>
+                  <textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="A short bio..."
+                    rows={3}
+                    className="w-full bg-white/[0.06] text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl px-3 py-[10px] resize-none leading-relaxed transition"
+                  />
+                </div>
+              </div>
+            </Section>
+
+            {/* ── Social accounts ── */}
+            <Section title="Social accounts" description="Shown as icon buttons on your page.">
+              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-4">
+                {SOCIAL_PLATFORMS.map((platform) => (
+                  <div key={platform.key}>
+                    <label className="flex items-center gap-2 text-[13px] text-white/40 mb-1.5 font-medium tracking-[-0.005em]">
+                      <span
+                        className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 [&>svg]:w-3 [&>svg]:h-3"
+                        style={{ background: `${platform.color}1f`, color: platform.color }}
+                      >
+                        {SOCIAL_ICONS[platform.key]}
+                      </span>
+                      {platform.label}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={socialLinks[platform.key] ?? ""}
+                        onChange={(e) => setSocialLinks((s) => ({ ...s, [platform.key]: e.target.value }))}
+                        placeholder={platform.placeholder}
+                        className={`${inputClass} truncate ${socialLinks[platform.key] ? "pr-9" : ""}`}
+                      />
+                      {socialLinks[platform.key] && (
+                        <button
+                          onClick={() => setSocialLinks((s) => { const n = { ...s }; delete n[platform.key]; return n; })}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-red-400 transition"
+                          aria-label={`Clear ${platform.label}`}
+                        >
+                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            {/* ── External links ── */}
+            <Section
+              title="Links"
+              description={totalClicks > 0 ? `${totalClicks} total click${totalClicks === 1 ? "" : "s"} so far.` : "Add the links you want to feature."}
+              action={
+                <button
+                  onClick={addLink}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-white bg-white/[0.07] hover:bg-white/[0.12] px-3 py-1.5 rounded-full transition shrink-0"
+                >
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                  </svg>
+                  Add link
+                </button>
+              }
+            >
+              {links.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-white/[0.1] py-10 text-center text-white/20 text-sm">
+                  No links yet — tap Add link
+                </div>
+              )}
+
+              {links.length > 0 && (
+                <div className="space-y-3">
+                  {links.map((lk, i) => (
+                    <div key={i} className="rounded-2xl border border-white/[0.07] px-4 py-3" style={{ background: "#161616" }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] text-white/30 font-semibold tracking-wide uppercase">Link {i + 1}</span>
+                        {lk.url && (clickCounts[normalizeUrl(lk.url)] ?? 0) > 0 && (
+                          <span className="flex items-center gap-1 text-[10px] text-white/40 bg-white/[0.07] border border-white/[0.08] rounded-full px-2 py-0.5">
+                            <svg width="9" height="9" fill="none" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" fill="currentColor"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                            {clickCounts[normalizeUrl(lk.url)]}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1 ml-auto">
+                          <button onClick={() => moveLink(i, "up")} disabled={i === 0}
+                            className="text-white/20 hover:text-white/60 disabled:opacity-20 disabled:cursor-not-allowed transition p-0.5">
+                            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </button>
+                          <button onClick={() => moveLink(i, "down")} disabled={i === links.length - 1}
+                            className="text-white/20 hover:text-white/60 disabled:opacity-20 disabled:cursor-not-allowed transition p-0.5">
+                            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </button>
+                        </div>
+                        <button onClick={() => removeLink(i)} className="text-white/20 hover:text-red-400 transition">
+                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={lk.heading}
+                          onChange={(e) => updateLink(i, "heading", e.target.value)}
+                          placeholder="Label (e.g. Portfolio)"
+                          className={inputClass}
+                        />
+                        <input
+                          type="text"
+                          value={lk.url}
+                          onChange={(e) => updateLink(i, "url", e.target.value)}
+                          placeholder="https://..."
+                          className={inputClass}
+                        />
+                        <input
+                          placeholder="Short description (optional)"
+                          className={`${inputClass} sm:col-span-2`}
+                          value={lk.description ?? ""}
+                          onChange={(e) => updateLink(i, "description", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+
+            {error && (
+              <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+                {error}
+              </div>
+            )}
+          </div>
+
+          {/* ═══ RIGHT — live preview ═══ */}
+          <div className={`${mobileTab === "preview" ? "block" : "hidden"} xl:block xl:sticky xl:top-[84px]`}>
+            <div className="rounded-2xl border border-white/[0.07] p-5" style={{ background: "#111" }}>
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <h2 className="text-[15px] font-semibold text-white tracking-[-0.02em]">Live preview</h2>
+                  <p className="text-[12px] text-white/30 mt-0.5">Updates as you type. Save to publish.</p>
+                </div>
+                <a
+                  href={`/p/${username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-[12px] font-medium text-white/50 hover:text-white border border-white/10 hover:border-white/25 rounded-full px-3 py-1.5 transition shrink-0"
+                >
+                  Open live
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                    <path d="M3 13L13 3M13 3H7M13 3V9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </a>
+              </div>
+
+              {/* Device frame */}
+              <div
+                className="mx-auto rounded-[32px] border-[8px] border-[#1c1c1c] overflow-hidden shadow-2xl bg-black"
+                style={{ maxWidth: "340px", height: "min(calc(100vh - 220px), 700px)", minHeight: "440px" }}
+              >
+                <div className="h-full overflow-y-auto overscroll-contain">
+                  <ProfileView user={previewUser} preview />
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
