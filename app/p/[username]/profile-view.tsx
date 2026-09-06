@@ -324,7 +324,7 @@ function RichBanner({ url, image }: { url: string; image?: string }) {
           ref={imgRef}
           src={image}
           alt=""
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
           onError={() => setFailed(true)}
         />
       ) : (
