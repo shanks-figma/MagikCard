@@ -108,6 +108,12 @@ export default function EditClient({
   const [error, setError] = useState("");
   const [clickCounts, setClickCounts] = useState<Record<string, number>>({});
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("edit");
+  // Only platforms with a saved value (or explicitly opened this session) get
+  // a visible input — the other ~8 stay collapsed into "+ chip" buttons so
+  // the section isn't a wall of empty fields.
+  const [openPlatforms, setOpenPlatforms] = useState<Set<string>>(
+    () => new Set(SOCIAL_PLATFORMS.filter((p) => initialSocialLinks[p.key]).map((p) => p.key))
+  );
 
   useEffect(() => {
     fetch(`/api/link-click?username=${username}`)
@@ -347,41 +353,73 @@ export default function EditClient({
 
             {/* ── Social accounts ── */}
             <Section title="Social accounts" description="Shown as icon buttons on your page.">
-              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-4">
-                {SOCIAL_PLATFORMS.map((platform) => (
-                  <div key={platform.key}>
-                    <label className="flex items-center gap-2 text-[13px] text-white/40 mb-1.5 font-medium tracking-[-0.005em]">
-                      <span
-                        className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 [&>svg]:w-3 [&>svg]:h-3"
-                        style={{ background: `${platform.color}1f`, color: platform.color }}
-                      >
-                        {SOCIAL_ICONS[platform.key]}
-                      </span>
-                      {platform.label}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={socialLinks[platform.key] ?? ""}
-                        onChange={(e) => setSocialLinks((s) => ({ ...s, [platform.key]: e.target.value }))}
-                        placeholder={platform.placeholder}
-                        className={`${inputClass} truncate ${socialLinks[platform.key] ? "pr-9" : ""}`}
-                      />
-                      {socialLinks[platform.key] && (
-                        <button
-                          onClick={() => setSocialLinks((s) => { const n = { ...s }; delete n[platform.key]; return n; })}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-red-400 transition"
-                          aria-label={`Clear ${platform.label}`}
-                        >
-                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
-                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {(() => {
+                const open = SOCIAL_PLATFORMS.filter((p) => openPlatforms.has(p.key));
+                const closed = SOCIAL_PLATFORMS.filter((p) => !openPlatforms.has(p.key));
+                return (
+                  <>
+                    {open.length > 0 && (
+                      <div className="grid sm:grid-cols-2 gap-x-4 gap-y-4 mb-4">
+                        {open.map((platform) => (
+                          <div key={platform.key}>
+                            <label className="flex items-center gap-2 text-[13px] text-white/40 mb-1.5 font-medium tracking-[-0.005em]">
+                              <span
+                                className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 [&>svg]:w-3 [&>svg]:h-3"
+                                style={{ background: `${platform.color}1f`, color: platform.color }}
+                              >
+                                {SOCIAL_ICONS[platform.key]}
+                              </span>
+                              {platform.label}
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                autoFocus={!socialLinks[platform.key]}
+                                value={socialLinks[platform.key] ?? ""}
+                                onChange={(e) => setSocialLinks((s) => ({ ...s, [platform.key]: e.target.value }))}
+                                placeholder={platform.placeholder}
+                                className={`${inputClass} truncate pr-9`}
+                              />
+                              <button
+                                onClick={() => {
+                                  setSocialLinks((s) => { const n = { ...s }; delete n[platform.key]; return n; });
+                                  setOpenPlatforms((s) => { const n = new Set(s); n.delete(platform.key); return n; });
+                                }}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-red-400 transition"
+                                aria-label={`Remove ${platform.label}`}
+                              >
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
+                                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {closed.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {closed.map((platform) => (
+                          <button
+                            key={platform.key}
+                            type="button"
+                            onClick={() => setOpenPlatforms((s) => new Set(s).add(platform.key))}
+                            className="flex items-center gap-1.5 text-[12px] font-medium text-white/50 hover:text-white bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.07] rounded-full pl-2 pr-3 py-1.5 transition"
+                          >
+                            <span
+                              className="w-4 h-4 rounded flex items-center justify-center shrink-0 [&>svg]:w-2.5 [&>svg]:h-2.5"
+                              style={{ background: `${platform.color}1f`, color: platform.color }}
+                            >
+                              {SOCIAL_ICONS[platform.key]}
+                            </span>
+                            {platform.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </Section>
 
             {/* ── External links ── */}
@@ -464,6 +502,10 @@ export default function EditClient({
                           />
                         )}
                       </div>
+                      {/* Picking a layout before there's a heading/URL to lay out is
+                          premature — nothing to preview yet, and it's the first
+                          thing shown for a brand-new, empty link slot. */}
+                      {lk.heading && lk.url && (
                       <div className="flex items-center gap-1 mt-2.5 p-0.5 rounded-full bg-white/[0.05] border border-white/[0.06] w-fit">
                         {LINK_STYLES.map((s) => (
                           <button
@@ -480,6 +522,7 @@ export default function EditClient({
                           </button>
                         ))}
                       </div>
+                      )}
                     </div>
                   ))}
                 </div>
