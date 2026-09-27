@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import ProfileCard from "@/components/profile-card";
 import { resolveCardStyle } from "@/lib/card-styles";
+import { newsreader } from "@/app/fonts/serif";
 
 function getFavicon(url: string): string {
   try {
@@ -172,13 +173,6 @@ const CARD_STROKE = "linear-gradient(to bottom, #323334, #292A2A)";
 const cardOuter = { minWidth: 0, padding: 1, borderRadius: 13, background: CARD_STROKE } as const;
 const cardInner = { borderRadius: 12, background: CARD_FILL } as const;
 const THUMB_SIZE = 42.85; // Figma: 42.854px
-
-// Light-theme equivalents of cardOuter/cardInner, used only under the "aura"
-// card style. Plain white card + soft shadow instead of a gradient border —
-// aura has no dark-card gradient language to match, since the whole page is
-// light.
-const auraCardOuter = { minWidth: 0, borderRadius: 16, background: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 8px 20px rgba(0,0,0,0.06)" } as const;
-const auraCardInner = { borderRadius: 16, background: "transparent" } as const;
 
 const onestStyle = { fontFamily: "var(--font-onest), sans-serif" } as const;
 
@@ -389,33 +383,211 @@ function LinkCard({
   );
 }
 
-/**
- * The aura theme's one-and-only link look: a flat white card, dark text on
- * light. Every link style (row/compact/featured/grid/rich) collapses to
- * this under aura — the reference this theme is built from shows one
- * consistent light list row, not a mix of densities.
- */
-function AuraListRow({ lk, href, onClick }: { lk: LinkItem; href: string; onClick: () => void }) {
+const AURA = {
+  ink: "#2b2a28",
+  muted: "#7d7b78",
+  hero: "#f2e6e8",
+  mint: "#dfe9e3",
+  list: "#f6f6f5",
+  divider: "#e7e6e4",
+} as const;
+
+function AuraCheck() {
   return (
-    <div style={{ ...auraCardOuter, flex: "0 0 100%" }}>
-      <a
-        href={href} target="_blank" rel="noopener noreferrer" onClick={onClick}
-        style={auraCardInner}
-        className="flex items-center gap-3 pl-2.5 pr-4 py-2.5 hover:brightness-[0.98] transition"
-      >
-        <LinkThumb url={lk.url} size={THUMB_SIZE} />
-        <div className="flex-1 min-w-0 flex flex-col justify-center gap-[2px]">
-          <p className="text-[16px] font-medium text-[#2a2a2a] truncate" style={{ ...onestStyle, lineHeight: "18px" }}>
-            {lk.heading}
-          </p>
-          {lk.description && (
-            <p className="text-[12px] font-normal truncate" style={{ ...onestStyle, lineHeight: "18px", color: "#8a8a8a" }}>
-              {lk.description}
-            </p>
-          )}
+    <span className="flex items-center justify-center w-[18px] h-[18px] rounded-full shrink-0" style={{ background: "#d4efd2" }}>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#3f9a4c" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
+
+const auraPill = "flex items-center gap-1.5 h-[26px] rounded-full bg-white text-[13px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]";
+
+function AuraSharePill({ username }: { username: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard.writeText(`${window.location.origin}/p/${username}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }}
+      className={`${auraPill} pl-3 pr-1`}
+      style={{ color: AURA.ink }}
+    >
+      {copied ? "Copied" : "Share"}
+      <AuraCheck />
+    </button>
+  );
+}
+
+function hostOf(url: string): string {
+  try {
+    return new URL(normalizeUrl(url)).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * The "aura" card style: a full-page light layout modelled section-for-section
+ * on an iOS profile screen — pink hero card, mint action card, grouped list,
+ * bottom icon bar. It replaces the dark layout wholesale rather than
+ * recolouring it, so individual link styles (row/grid/rich…) don't apply here.
+ */
+function AuraView({ user, isOwner, preview }: { user: User; isOwner: boolean; preview: boolean }) {
+  const [showQR, setShowQR] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+  const username = user.username ?? "";
+  const displayName = user.name ?? `@${username}`;
+  const links = (user.links ?? []).filter((l) => l.heading && l.url);
+  const socials = Object.entries(user.socialLinks ?? {}).filter(([, v]) => v);
+  const serif = newsreader.className;
+
+  return (
+    <div
+      className={`bg-white ${preview ? "h-full pointer-events-none select-none" : "min-h-screen"}`}
+      style={{ color: AURA.ink }}
+    >
+      {isOwner && (
+        <div className="sticky top-0 z-20 flex items-center justify-between px-5 py-3 bg-white/80 backdrop-blur border-b border-black/[0.06]">
+          <Link href="/dashboard" className="text-sm text-black/50 hover:text-black transition">Dashboard</Link>
+          <Link href={`/p/${username}/edit`} className="text-sm font-medium px-3.5 py-1.5 rounded-full bg-black text-white hover:bg-black/85 transition">
+            Edit profile
+          </Link>
         </div>
-        <span className="text-[#2a2a2a]/40 shrink-0"><ArrowIcon size={20} /></span>
-      </a>
+      )}
+
+      <div className="max-w-[420px] mx-auto px-2.5 pt-3 pb-4 flex flex-col gap-2.5">
+        {/* Hero */}
+        <section className="relative rounded-[38px] px-5 pt-5 pb-9 flex flex-col items-center text-center overflow-hidden" style={{ background: AURA.hero }}>
+          <div className="w-full flex items-center justify-between">
+            <span className={`${auraPill} pl-1 pr-3`}>
+              <AuraCheck />
+              <span>MagikCard</span>
+              <span style={{ color: AURA.muted }}>Card</span>
+            </span>
+            {username && <AuraSharePill username={username} />}
+          </div>
+
+          <div className="relative mt-6 w-[196px] h-[196px]">
+            {/* soft colour halo that the feathered photo dissolves into */}
+            <div className="absolute inset-[-18px] rounded-full blur-2xl opacity-90"
+              style={{ background: "radial-gradient(circle at 70% 20%, #f4b4a8 0%, transparent 45%), radial-gradient(circle at 30% 30%, #e9b8e0 0%, transparent 50%), radial-gradient(circle at 50% 85%, #9fd3a6 0%, transparent 50%)" }} />
+            <div className="absolute inset-0 rounded-full overflow-hidden"
+              style={{ WebkitMaskImage: "radial-gradient(circle, #000 58%, transparent 71%)", maskImage: "radial-gradient(circle, #000 58%, transparent 71%)" }}>
+              {user.image && !imageFailed ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.image} alt={displayName} className="w-full h-full object-cover" onError={() => setImageFailed(true)} />
+              ) : (
+                <div className={`w-full h-full flex items-center justify-center text-6xl ${serif}`} style={{ background: "#ead6da", color: AURA.muted }}>
+                  {displayName.replace(/^@/, "")[0]?.toUpperCase()}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <h1 className={`${serif} mt-3 text-[46px] leading-[1.1] tracking-[-0.02em] break-words max-w-full`}>{displayName}</h1>
+          <p className="mt-4 text-[19px]" style={{ color: AURA.muted }}>@{username}</p>
+        </section>
+
+        {/* Primary action */}
+        {username && (
+          <a href={`/api/vcard/${username}`} className="flex items-center gap-4 rounded-full pl-5 pr-6 py-4 active:scale-[0.99] transition" style={{ background: AURA.mint }}>
+            <span className="relative w-[50px] h-[50px] shrink-0 flex items-center justify-center">
+              <span className="absolute inset-0 rounded-full blur-[3px]" style={{ background: "radial-gradient(circle at 40% 35%, #8fcf8a, #3f8f4f 70%)" }} />
+              <svg className="relative" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM19 8v6M22 11h-6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <span className="min-w-0 flex flex-col text-left">
+              <span className={`${serif} text-[21px] leading-tight`}>Save my contact</span>
+              <span className="mt-1 flex items-center gap-1.5 text-[13px]" style={{ color: AURA.muted }}>
+                <span className="w-2 h-2 rounded-full" style={{ background: "#ec9a82" }} />
+                Add to your phone · vCard
+              </span>
+            </span>
+          </a>
+        )}
+
+        {/* Links as a grouped list */}
+        {(links.length > 0 || isOwner) && (
+          <section className="rounded-[30px] overflow-hidden" style={{ background: AURA.list }}>
+            {links.length === 0 && (
+              <Link href={`/p/${username}/edit`} className="block px-5 py-6 text-[15px]" style={{ color: AURA.muted }}>
+                Add links to your profile →
+              </Link>
+            )}
+            {links.map((lk, i) => {
+              const href = normalizeUrl(lk.url);
+              const onClick = () => trackClick(username, lk.url);
+              const yt = getYouTubeEmbedUrl(lk.url);
+              const sp = getSpotifyEmbedUrl(lk.url);
+              const sub = lk.description || hostOf(lk.url);
+              const border = i > 0 ? { borderTop: `1px solid ${AURA.divider}` } : undefined;
+
+              if (yt || sp) {
+                return (
+                  <div key={i} className="px-5 pt-5 pb-4" style={border}>
+                    <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick} className="block">
+                      <p className={`${serif} text-[21px] leading-tight truncate`}>{lk.heading}</p>
+                      <p className="mt-1 text-[13px] truncate" style={{ color: AURA.muted }}>{sub}</p>
+                    </a>
+                    <div className="mt-3 rounded-2xl overflow-hidden">
+                      {yt ? (
+                        <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                          <iframe src={yt} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={lk.heading} />
+                        </div>
+                      ) : (
+                        <iframe src={sp!} width="100%" height={lk.url.includes("/track/") ? "80" : "352"} allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title={lk.heading} />
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <a key={i} href={href} target="_blank" rel="noopener noreferrer" onClick={onClick}
+                  className="flex items-center gap-3 px-5 py-5 hover:bg-black/[0.02] transition" style={border}>
+                  <span className="flex-1 min-w-0">
+                    <span className={`${serif} block text-[21px] leading-tight truncate`}>{lk.heading}</span>
+                    <span className="block mt-1.5 text-[13px] truncate" style={{ color: AURA.muted }}>{sub}</span>
+                  </span>
+                  {/* segmented-control look, as in the reference's row toggles */}
+                  <span className="shrink-0 flex items-center p-[3px] rounded-full text-[13px]" style={{ background: "#ebeae8" }}>
+                    <span className="px-3 py-[5px] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.1)]">Open</span>
+                    <span className="px-2.5" style={{ color: AURA.muted }}><ArrowIcon size={12} /></span>
+                  </span>
+                </a>
+              );
+            })}
+          </section>
+        )}
+
+        {!links.length && !socials.length && !isOwner && (
+          <p className="text-center py-10 text-sm" style={{ color: AURA.muted }}>No links yet.</p>
+        )}
+      </div>
+
+      {/* Bottom icon bar — socials, then QR */}
+      <nav className={`${preview ? "" : "sticky bottom-0"} bg-white/90 backdrop-blur`}>
+        <div className="max-w-[420px] mx-auto px-6 pt-3 pb-5 flex items-center justify-around">
+          {socials.map(([key, url], i) => (
+            <a key={key} href={normalizeUrl(url)} target="_blank" rel="noopener noreferrer" title={key}
+              className="w-10 h-10 flex items-center justify-center [&_svg]:w-6 [&_svg]:h-6 transition hover:opacity-70"
+              style={{ color: i === 0 ? "#1c1b1a" : "#8e8c89" }}>
+              {SOCIAL_ICONS[key] ?? <span className="text-sm font-semibold">{key[0].toUpperCase()}</span>}
+            </a>
+          ))}
+          <button type="button" onClick={() => setShowQR(true)} title="QR code"
+            className="w-10 h-10 flex items-center justify-center transition hover:opacity-70" style={{ color: socials.length ? "#8e8c89" : "#1c1b1a" }}>
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="14" width="3" height="3" rx="0.5" fill="currentColor"/><rect x="18" y="18" width="3" height="3" rx="0.5" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </nav>
+      {showQR && <QRModal username={username} onClose={() => setShowQR(false)} />}
     </div>
   );
 }
@@ -435,26 +607,23 @@ export default function ProfileView({
   const socialLinks = (user.socialLinks as Record<string, string> | null) ?? {};
   const hasSocialLinks = Object.values(socialLinks).some(Boolean);
   const [showQR, setShowQR] = useState(false);
-  // The "aura" card style carries the whole page, not just the avatar: a
-  // light pastel theme instead of the dark one every other style shares.
-  // Individual link styles (row/compact/featured/grid/rich) are a dark-theme
-  // concept — under aura every link renders as one consistent light list
-  // row instead, matching the reference this theme is built from.
-  const isAura = resolveCardStyle(user.cardStyle) === "aura";
+  // Aura is a whole-page layout, not just a different avatar card.
+  if (resolveCardStyle(user.cardStyle) === "aura") {
+    return <AuraView user={user} isOwner={isOwner} preview={preview} />;
+  }
 
   return (
     <div
-      className={`${isAura ? "text-[#2a2a2a]" : "bg-black text-white"} ${
+      className={`bg-black text-white ${
         preview ? "h-full pointer-events-none select-none" : "min-h-screen"
       }`}
-      style={isAura ? { background: "radial-gradient(ellipse 900px 520px at 50% -120px, #f6c9d9 0%, #f3d9c8 32%, #faf8f6 65%), #faf8f6" } : undefined}
     >
       {/* ── Owner edit bar ── */}
       {isOwner && (
         <div className={`sticky top-0 z-20 flex items-center justify-between px-5 py-3 backdrop-blur border-b ${
-          isAura ? "bg-white/60 border-black/[0.06]" : "bg-black/60 border-white/10"
+          "bg-black/60 border-white/10"
         }`}>
-          <Link href="/dashboard" className={`text-sm transition flex items-center gap-1.5 ${isAura ? "text-black/50 hover:text-black" : "text-white/50 hover:text-white"}`}>
+          <Link href="/dashboard" className={`text-sm transition flex items-center gap-1.5 text-white/50 hover:text-white`}>
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
@@ -463,7 +632,7 @@ export default function ProfileView({
           <Link
             href={`/p/${user.username}/edit`}
             className={`flex items-center gap-1.5 text-sm font-medium px-3.5 py-1.5 rounded-full transition ${
-              isAura ? "bg-black text-white hover:bg-black/85" : "bg-white text-black hover:bg-white/90"
+              "bg-white text-black hover:bg-white/90"
             }`}
           >
             <svg width="13" height="13" fill="none" viewBox="0 0 24 24">
@@ -484,7 +653,7 @@ export default function ProfileView({
           <a
             href={`/api/vcard/${user.username}`}
             className={`mt-6 w-full max-w-xs flex items-center justify-center gap-2 h-12 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition ${
-              isAura ? "bg-black text-white hover:bg-black/85" : "bg-white text-black hover:bg-white/90"
+              "bg-white text-black hover:bg-white/90"
             }`}
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -504,20 +673,20 @@ export default function ProfileView({
           <button
             onClick={() => setShowQR(true)}
             className={`flex items-center gap-1.5 text-xs font-medium transition border rounded-full px-3 py-1.5 ${
-              isAura ? "text-black/40 hover:text-black/70 border-black/10" : "text-white/40 hover:text-white/70 border-white/10"
+              "text-white/40 hover:text-white/70 border-white/10"
             }`}
           >
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="14" width="3" height="3" rx="0.5" fill="currentColor"/><rect x="19" y="14" width="2" height="2" rx="0.5" fill="currentColor"/><rect x="14" y="19" width="2" height="2" rx="0.5" fill="currentColor"/><rect x="18" y="18" width="3" height="3" rx="0.5" fill="currentColor"/></svg>
             QR
           </button>
-          <ShareButton username={user.username ?? ""} light={isAura} />
+          <ShareButton username={user.username ?? ""} />
         </div>
         {showQR && <QRModal username={user.username ?? ""} onClose={() => setShowQR(false)} />}
 
         {/* Links */}
         {externalLinks.filter((l) => l.heading && l.url).length > 0 && (
           <section className="flex flex-col gap-3">
-            <p className={`text-[18px] ${isAura ? "text-[#2a2a2a]" : "text-white"}`}>All links</p>
+            <p className={`text-[18px] text-white`}>All links</p>
             {/* flex-wrap, not flex-col: grid-style cards report a half-width
                 flex-basis and sit two-up, everything else reports full width
                 and wraps to its own line — order is preserved either way. */}
@@ -529,12 +698,12 @@ export default function ProfileView({
 
               if (ytEmbed) {
                 return (
-                  <div key={i} style={{ ...(isAura ? auraCardOuter : cardOuter), flex: "0 0 100%" }}>
-                  <div className="overflow-hidden" style={isAura ? auraCardInner : cardInner}>
+                  <div key={i} style={{ ...cardOuter, flex: "0 0 100%" }}>
+                  <div className="overflow-hidden" style={cardInner}>
                     <div className="px-4 pt-4 pb-2 flex items-center gap-2">
                       <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" className="text-red-500 shrink-0"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                      <p className={`text-sm font-semibold flex-1 truncate ${isAura ? "text-[#2a2a2a]" : "text-white"}`}>{lk.heading}</p>
-                      <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => trackClick(user.username ?? "", lk.url)} className={`transition shrink-0 ${isAura ? "text-[#2a2a2a]/30 hover:text-[#2a2a2a]/70" : "text-white/30 hover:text-white/70"}`}>
+                      <p className={`text-sm font-semibold flex-1 truncate text-white`}>{lk.heading}</p>
+                      <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => trackClick(user.username ?? "", lk.url)} className={`transition shrink-0 text-white/30 hover:text-white/70`}>
                         <ArrowIcon />
                       </a>
                     </div>
@@ -548,7 +717,7 @@ export default function ProfileView({
                       />
                     </div>
                     {lk.description && (
-                      <p className={`px-4 pb-3 pt-1 text-xs ${isAura ? "text-[#2a2a2a]/40" : "text-white/40"}`}>{lk.description}</p>
+                      <p className={`px-4 pb-3 pt-1 text-xs text-white/40`}>{lk.description}</p>
                     )}
                   </div>
                   </div>
@@ -558,12 +727,12 @@ export default function ProfileView({
               if (spEmbed) {
                 const isTrack = lk.url.includes("/track/");
                 return (
-                  <div key={i} style={{ ...(isAura ? auraCardOuter : cardOuter), flex: "0 0 100%" }}>
-                  <div className="overflow-hidden" style={isAura ? auraCardInner : cardInner}>
+                  <div key={i} style={{ ...cardOuter, flex: "0 0 100%" }}>
+                  <div className="overflow-hidden" style={cardInner}>
                     <div className="px-4 pt-4 pb-2 flex items-center gap-2">
                       <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" className="text-green-500 shrink-0"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-                      <p className={`text-sm font-semibold flex-1 truncate ${isAura ? "text-[#2a2a2a]" : "text-white"}`}>{lk.heading}</p>
-                      <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => trackClick(user.username ?? "", lk.url)} className={`transition shrink-0 ${isAura ? "text-[#2a2a2a]/30 hover:text-[#2a2a2a]/70" : "text-white/30 hover:text-white/70"}`}>
+                      <p className={`text-sm font-semibold flex-1 truncate text-white`}>{lk.heading}</p>
+                      <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => trackClick(user.username ?? "", lk.url)} className={`transition shrink-0 text-white/30 hover:text-white/70`}>
                         <ArrowIcon />
                       </a>
                     </div>
@@ -579,21 +748,10 @@ export default function ProfileView({
                       />
                     </div>
                     {lk.description && (
-                      <p className={`px-4 pb-3 text-xs ${isAura ? "text-[#2a2a2a]/40" : "text-white/40"}`}>{lk.description}</p>
+                      <p className={`px-4 pb-3 text-xs text-white/40`}>{lk.description}</p>
                     )}
                   </div>
                   </div>
-                );
-              }
-
-              if (isAura) {
-                return (
-                  <AuraListRow
-                    key={i}
-                    lk={lk}
-                    href={href}
-                    onClick={() => trackClick(user.username ?? "", lk.url)}
-                  />
                 );
               }
 
@@ -612,9 +770,9 @@ export default function ProfileView({
 
         {/* Empty state */}
         {externalLinks.filter((l) => l.heading && l.url).length === 0 && !hasSocialLinks && (
-          <div className={`text-center py-16 text-sm ${isAura ? "text-[#2a2a2a]/40" : "text-white/30"}`}>
+          <div className={`text-center py-16 text-sm text-white/30`}>
             {isOwner ? (
-              <Link href={`/p/${user.username}/edit`} className={isAura ? "text-black/70 hover:underline" : "text-blue-400 hover:underline"}>
+              <Link href={`/p/${user.username}/edit`} className="text-blue-400 hover:underline">
                 Add links to your profile →
               </Link>
             ) : "No links yet."}
@@ -624,18 +782,16 @@ export default function ProfileView({
         {/* Social links */}
         {hasSocialLinks && (
           <section>
-            <h2 className={`text-sm font-medium mb-3 ${isAura ? "text-[#2a2a2a]/50" : "text-white/40"}`}>Social links</h2>
+            <h2 className={`text-sm font-medium mb-3 text-white/40`}>Social links</h2>
             <div className="flex flex-wrap gap-3">
               {Object.entries(socialLinks).filter(([, v]) => v).map(([key, url]) => (
                 <div
                   key={key}
-                  style={isAura
-                    ? { width: "52px", height: "52px", borderRadius: "13px", background: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 8px 20px rgba(0,0,0,0.06)" }
-                    : { padding: "1px", borderRadius: "13px", background: "linear-gradient(to bottom, #323334, #292A2A)" }}
+                  style={{ padding: "1px", borderRadius: "13px", background: "linear-gradient(to bottom, #323334, #292A2A)" }}
                 >
                   <a href={normalizeUrl(url)} target="_blank" rel="noopener noreferrer"
-                    className={`flex items-center justify-center w-full h-full ${isAura ? "text-[#2a2a2a]" : "text-white"}`}
-                    style={isAura ? { borderRadius: "13px" } : { width: "52px", height: "52px", borderRadius: "12px", background: "linear-gradient(to bottom, rgba(206,210,215,0.2), rgba(96,100,105,0.2)), #000000" }}
+                    className={`flex items-center justify-center text-white`}
+                    style={{ width: "52px", height: "52px", borderRadius: "12px", background: "linear-gradient(to bottom, rgba(206,210,215,0.2), rgba(96,100,105,0.2)), #000000" }}
                     title={key}>
                     {SOCIAL_ICONS[key] ?? <span className="text-xs font-bold">{key[0].toUpperCase()}</span>}
                   </a>
@@ -648,7 +804,7 @@ export default function ProfileView({
 
       {/* Footer */}
       <div className="text-center pb-8">
-        <Link href="/" className={`text-xs transition font-medium tracking-wide ${isAura ? "text-[#2a2a2a]/25 hover:text-[#2a2a2a]/60" : "text-white/20 hover:text-white/50"}`}>
+        <Link href="/" className={`text-xs transition font-medium tracking-wide text-white/20 hover:text-white/50`}>
           MagikCard
         </Link>
       </div>
