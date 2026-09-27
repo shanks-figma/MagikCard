@@ -1,0 +1,208 @@
+.wrapper { width: 100%; max-width: 360px; margin: 0 auto; }
+.stage { perspective: 1100px; padding: 18px 20px 28px; touch-action: pan-y; }
+.card {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --reflection-x: 50%;
+  position: relative;
+  isolation: isolate;
+  padding: 14px 13px 20px;
+  border: 1px solid #c2cdce;
+  border-radius: 9px;
+  background: linear-gradient(125deg, #5d6a6d80, #253438b3 36%, #69767966 78%, #aab5b366);
+  box-shadow: inset 2px 0 2px #ffffffa6, inset -3px 0 3px #0009,
+    inset 0 2px 2px #fff9, inset 0 -3px 3px #d2dddd66,
+    3px 3px 0 #677577, 5px 5px 0 #242e30, 6px 6px 0 #93a0a177,
+    0 24px 40px #0008;
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) rotateZ(-3deg);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid #e9ffff50;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 2px #060e1266, 0 0 0 1px #0005;
+  pointer-events: none;
+}
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(112deg, transparent 21%, #e8ffff08 33%, #f5ffff29 34%, #ffffff05 40%, transparent 52%, #ffffff0d 73%, transparent 76%);
+  background-size: 220% 100%;
+  background-position: var(--reflection-x) 0;
+  transform: translateZ(14px);
+  pointer-events: none;
+}
+.labelSlot {
+  padding: 4px;
+  border: 1px solid #d2e1e180;
+  border-radius: 3px;
+  box-shadow: 0 2px 0 #101b1e, inset 0 0 0 1px #0c171a;
+  transform: translateZ(3px);
+}
+.label {
+  min-height: 80px;
+  padding: 15px 14px;
+  background: #eeefec;
+  color: #15191a;
+  text-align: left;
+  box-shadow: inset 0 0 0 1px #fff, 0 1px 3px #0008;
+}
+.name {
+  margin: 0;
+  font-family: var(--font-onest), Arial, sans-serif;
+  font-size: clamp(20px, 6vw, 27px);
+  font-weight: 650;
+  letter-spacing: -.045em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.username {
+  margin: 7px 0 0;
+  color: #51585a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: .025em;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.imageSlot {
+  position: relative;
+  margin-top: 19px;
+  padding: 10px;
+  border: 1px solid #c8dcdc7a;
+  border-radius: 3px;
+  background: #9dafaf17;
+  box-shadow: inset 0 1px 0 #eaffff59, 0 -2px 0 #142124cc, 0 2px 1px #bccccc66;
+  transform: translateZ(3px);
+}
+.photo {
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 5px solid #e7e9e4;
+  background: #f4f5f1;
+  color: #59696d;
+  box-shadow: 0 0 0 1px #0009, 0 3px 6px #0006;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.photo img { width: 100%; height: 100%; object-fit: cover; object-position: center; user-select: none; }
+.motionButton {
+  margin-top: 8px; padding: 8px 14px; border: 1px solid #343434;
+  border-radius: 999px; color: #c6c6cc; font-size: 12px;
+}
+.motionButton:hover { border-color: #acbfc4; color: white; }
+.motionButton:focus-visible { outline: 2px solid #acbfc4; outline-offset: 4px; }
+.motionNote { margin-top: 12px; font-size: 12px; color: #aaa; }
+@media (prefers-reduced-motion: reduce) {
+  .card { transform: rotateZ(-3deg); will-change: auto; }
+  .card::after { background-position: 50% 0; }
+}
+
+/* All styles share the same identity markup, square photo, and motion. */
+.electric {
+  padding: 22px 19px 24px;
+  border: 1px solid #5c8cff;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #1364ff, #1238ff 65%, #0925da);
+  box-shadow: inset 1px 2px 3px #9bc4ff80, inset -2px -2px 3px #052096,
+    3px 7px 0 #0921af, 5px 10px 0 #071977, 0 24px 40px #0008;
+}
+.electric::before { display: none; }
+.electric::after { opacity: .35; }
+.electric .labelSlot, .paper .labelSlot {
+  border: 0; padding: 0; box-shadow: none; border-radius: 0;
+}
+.electric .label, .paper .label { background: transparent; box-shadow: none; padding: 4px 2px 18px; }
+.electric .name { color: #fff; font-size: 30px; font-weight: 750; letter-spacing: -.04em; }
+.electric .username { color: #d0deff; font-size: 13px; }
+.electric .imageSlot { padding: 0; margin-top: 8px; background: none; border: 0; box-shadow: none; }
+.electric .photo { border: 0; border-radius: 13px; box-shadow: 0 0 0 1px #1330a3, inset 0 2px 5px #0005; }
+.paper {
+  padding: 23px 20px 23px;
+  background: #eeebe3;
+  border: 1px solid #f9f7f1;
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 1px #ddd8cd, 1px 2px 0 #c6c0b3, 2px 4px 0 #938d81, 0 20px 32px #0007;
+}
+.paper::before, .paper::after { display: none; }
+.paper .name { color: #24221e; font-family: Georgia, "Times New Roman", serif; font-size: 32px; font-weight: 400; letter-spacing: -.045em; }
+.paper .username { color: #565249; font-size: 12px; }
+.paper .label { border-bottom: 1px solid #464238; }
+.paper .imageSlot { padding: 0; margin-top: 17px; background: none; border: 0; box-shadow: none; }
+.paper .photo { border: 1px solid #c7c2b6; border-radius: 2px; box-shadow: none; }
+
+/*
+ * Aura is not a "physical card" like the three styles above — no tilt, no
+ * bevel, no border. It's a soft, light layout: a circular photo on a
+ * blurred pastel glow, name below in serif, handle below that. Given how
+ * different the shape (circle vs. square) and stacking order (photo-then-
+ * name vs. name-then-photo) are from the tilt-card markup, it gets its own
+ * dedicated JSX branch in profile-card.tsx rather than fighting the shared
+ * .card/.label/.imageSlot framing with overrides.
+ */
+.auraWrapper {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 12px 0 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.auraGlow {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auraGlow::before {
+  content: "";
+  position: absolute;
+  inset: -30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f6c9d9 0%, #f3d9c8 45%, transparent 72%);
+  filter: blur(20px);
+  opacity: 0.9;
+  z-index: 0;
+}
+.auraPhoto {
+  position: relative;
+  z-index: 1;
+  width: 168px;
+  height: 168px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f4ece6;
+  color: #8a7d74;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px #0000001a;
+}
+.auraPhoto img { width: 100%; height: 100%; object-fit: cover; object-position: center; user-select: none; }
+.auraName {
+  margin: 18px 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 400;
+  color: #2a2a2a;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.auraUsername {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: #8a8a8a;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
