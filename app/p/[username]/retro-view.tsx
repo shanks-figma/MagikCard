@@ -87,12 +87,11 @@ export default function RetroView({ user, isOwner, preview }: { user: User; isOw
       )}
 
       <div className={styles.window}>
-        <RetroTitleBar title={`${username || "profile"}.exe`} />
+        <RetroTitleBar title={username || displayName} />
         <div className={styles.menubar} aria-hidden="true">
           {MENU.map((m) => <span key={m}><u>{m[0]}</u>{m.slice(1)}</span>)}
         </div>
 
-        <p className={styles.handle}>{username}</p>
         <hr className={styles.rule} />
 
         <section className={styles.profileRow}>

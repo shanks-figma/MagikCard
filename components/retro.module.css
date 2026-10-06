@@ -49,10 +49,8 @@
 }
 .titleBtn + .titleBtn:last-child { margin-left: 2px; }
 
-.menubar { display: flex; gap: 2px; padding: 4px 2px 2px; font-size: 16px; }
+.menubar { display: flex; gap: 2px; padding: 4px 2px 6px; font-size: 16px; }
 .menubar span { padding: 2px 8px; }
-
-.handle { margin: 14px 0 12px; text-align: center; font-weight: 700; font-size: 17px; overflow-wrap: anywhere; padding: 0 8px; }
 
 .rule { border: 0; height: 0; border-top: 2px solid #3a3a3a; border-bottom: 1px solid #fff; margin: 0 2px; }
 

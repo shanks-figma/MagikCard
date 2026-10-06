@@ -94,7 +94,7 @@ export default function ProfileCard({ image, username, name, preview = false, ca
   if (isRetro) {
     return (
       <div className={`${retro.window} ${retro.mini}`} data-testid="profile-tilt-card" data-card-style="retro">
-        <RetroTitleBar title={`${username || "profile"}.exe`} />
+        <RetroTitleBar title={username || name} />
         <div className={retro.miniBody}>
           <div className={retro.avatar}>
             {image && !imageFailed ? (
