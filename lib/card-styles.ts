@@ -3,6 +3,7 @@ export const CARD_STYLES = [
   { id: "electric", name: "Electric", description: "Bold blue · sculpted frame" },
   { id: "paper", name: "Studio", description: "Warm paper · editorial type" },
   { id: "aura", name: "Aura", description: "Soft glow · light theme" },
+  { id: "retro", name: "Retro", description: "Windows 95 · pixel chrome" },
 ] as const;
 export type CardStyle = typeof CARD_STYLES[number]["id"];
 export function isCardStyle(value: unknown): value is CardStyle {

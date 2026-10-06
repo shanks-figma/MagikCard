@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { User } from "lucide-react";
 import { resolveCardStyle } from "@/lib/card-styles";
 import styles from "./profile-card.module.css";
+import retro from "./retro.module.css";
+import { RetroTitleBar } from "./retro-chrome";
 
 type OrientationAPI = typeof DeviceOrientationEvent & {
   requestPermission?: () => Promise<"granted" | "denied">;
@@ -23,9 +25,10 @@ export default function ProfileCard({ image, username, name, preview = false, ca
   useEffect(() => { setImageFailed(false); }, [image]);
 
   const isAura = resolveCardStyle(cardStyle) === "aura";
+  const isRetro = resolveCardStyle(cardStyle) === "retro";
 
   useEffect(() => {
-    if (preview || isAura) return; // aura has no tilt — nothing to animate
+    if (preview || isAura || isRetro) return; // flat styles have no tilt
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const configure = () => {
       reducedMotion.current = preference.matches;
@@ -51,7 +54,7 @@ export default function ProfileCard({ image, username, name, preview = false, ca
     };
     frame = requestAnimationFrame(animate);
     return () => { cancelAnimationFrame(frame); preference.removeEventListener("change", configure); };
-  }, [preview, reset, isAura]);
+  }, [preview, reset, isAura, isRetro]);
 
   useEffect(() => {
     if (preview || motion !== "on") return;
@@ -86,6 +89,25 @@ export default function ProfileCard({ image, username, name, preview = false, ca
       const result = await api.requestPermission?.();
       setMotion(result === "denied" ? "denied" : "on");
     } catch { setMotion("denied"); }
+  }
+
+  if (isRetro) {
+    return (
+      <div className={`${retro.window} ${retro.mini}`} data-testid="profile-tilt-card" data-card-style="retro">
+        <RetroTitleBar title={`${username || "profile"}.exe`} />
+        <div className={retro.miniBody}>
+          <div className={retro.avatar}>
+            {image && !imageFailed ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={image} alt={name} draggable={false} onError={() => setImageFailed(true)} />
+            ) : <User size={48} strokeWidth={1} aria-label={name} />}
+          </div>
+          <Heading className={retro.miniName}>{name}</Heading>
+          <p className={retro.miniHandle}>@{username}</p>
+          <span className={retro.btn} aria-hidden="true">+ Save contact</span>
+        </div>
+      </div>
+    );
   }
 
   if (isAura) {
