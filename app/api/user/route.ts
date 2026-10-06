@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { isCardStyle } from "@/lib/card-styles";
 import prisma from "@/lib/prisma";
 
 export async function GET() {
@@ -15,7 +16,21 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { username, bio, name, links, socialLinks } = body;
+    const { username, bio, name, links, socialLinks, cardStyle } = body;
+    let phone: string | null | undefined;
+    if (body.phone !== undefined) {
+      if (body.phone !== null && typeof body.phone !== "string") {
+        return NextResponse.json({ error: "Enter a valid phone number." }, { status: 400 });
+      }
+      phone = body.phone?.trim() || null;
+      const digits = phone?.replace(/\D/g, "") ?? "";
+      if (phone && (!/^\+?[0-9\s().-]+$/.test(phone) || digits.length < 6 || digits.length > 15)) {
+        return NextResponse.json({ error: "Enter a valid phone number, e.g. +91 98765 43210." }, { status: 400 });
+      }
+    }
+    if (cardStyle !== undefined && !isCardStyle(cardStyle)) {
+      return NextResponse.json({ error: "Choose a valid card style." }, { status: 400 });
+    }
 
     const currentUser = await prisma.user.findUnique({
       where: { email: session.user.email },
@@ -24,7 +39,7 @@ export async function PATCH(req: Request) {
 
     // Username change validation
     if (username !== undefined && username !== currentUser?.username) {
-      if (!/^[a-z0-9_-]{3,30}$/.test(username)) {
+      if (typeof username !== "string" || !/^[a-z0-9_-]{3,30}$/.test(username)) {
         return NextResponse.json(
           { error: "Username must be 3–30 chars: lowercase letters, numbers, - or _" },
           { status: 400 }
@@ -60,11 +75,13 @@ export async function PATCH(req: Request) {
         ...(username !== undefined && { username }),
         ...(isUsernameChanging && { usernameChangedAt: new Date() }),
         ...(bio !== undefined && { bio }),
+        ...(cardStyle !== undefined && { cardStyle }),
+        ...(phone !== undefined && { phone }),
         ...(name !== undefined && { name }),
         ...(links !== undefined && { links }),
         ...(socialLinks !== undefined && { socialLinks }),
       },
-      select: { username: true, usernameChangedAt: true, bio: true, name: true, links: true, socialLinks: true },
+      select: { cardStyle: true, phone: true, username: true, usernameChangedAt: true, bio: true, name: true, links: true, socialLinks: true },
     });
 
     return NextResponse.json(user);

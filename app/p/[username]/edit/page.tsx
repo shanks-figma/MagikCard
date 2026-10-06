@@ -18,8 +18,10 @@ export default async function EditProfilePage({ params }: { params: { username: 
     <EditClient
       username={user.username ?? ""}
       usernameChangedAt={user.usernameChangedAt?.toISOString() ?? null}
+      initialCardStyle={user.cardStyle}
       initialName={user.name ?? ""}
       initialBio={user.bio ?? ""}
+      initialPhone={user.phone ?? ""}
       initialImage={user.image ?? null}
       initialLinks={(user.links as { heading: string; url: string }[]) ?? []}
       initialSocialLinks={(user.socialLinks as Record<string, string>) ?? {}}

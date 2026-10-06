@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ProfileCard from "@/components/profile-card";
+import { CARD_STYLES, resolveCardStyle, type CardStyle } from "@/lib/card-styles";
 import ProfileView, { type LinkStyle } from "../profile-view";
 
 const LINK_STYLES: { value: LinkStyle; label: string }[] = [
@@ -81,7 +83,9 @@ function Section({
 export default function EditClient({
   username,
   initialName,
+  initialCardStyle,
   initialBio,
+  initialPhone,
   initialImage,
   initialLinks,
   initialSocialLinks,
@@ -90,18 +94,22 @@ export default function EditClient({
   username: string;
   usernameChangedAt: string | null;
   initialName: string;
+  initialCardStyle: string | null;
   initialBio: string;
+  initialPhone: string;
   initialImage: string | null;
   initialLinks: Link[];
   initialSocialLinks: Record<string, string>;
 }) {
   const router = useRouter();
+  const [cardStyle, setCardStyle] = useState<CardStyle>(resolveCardStyle(initialCardStyle));
   const [image, setImage] = useState<string | null>(initialImage);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initialName);
   const [usernameVal, setUsernameVal] = useState(username);
   const [bio, setBio] = useState(initialBio);
+  const [phone, setPhone] = useState(initialPhone);
   const [links, setLinks] = useState<Link[]>(initialLinks);
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>(initialSocialLinks);
   const [saving, setSaving] = useState(false);
@@ -165,7 +173,7 @@ export default function EditClient({
     const res = await fetch("/api/user", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, username: usernameVal, bio, links, socialLinks }),
+      body: JSON.stringify({ name, username: usernameVal, bio, phone, links, socialLinks, cardStyle }),
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
@@ -180,9 +188,11 @@ export default function EditClient({
 
   // What the public page will render, straight from the live form state.
   const previewUser = {
+    cardStyle,
     name,
     username: usernameVal,
     bio,
+    phone,
     image,
     links,
     socialLinks,
@@ -245,6 +255,33 @@ export default function EditClient({
 
           {/* ═══ LEFT — builder ═══ */}
           <div className={`${mobileTab === "edit" ? "block" : "hidden"} xl:block space-y-5`}>
+
+            <Section title="Card style" description="Choose a look. Your photo, links and tilt come with you.">
+              <fieldset>
+                <legend className="sr-only">Card style</legend>
+                <div className="grid grid-cols-1 min-[460px]:grid-cols-3 gap-3">
+                  {CARD_STYLES.map((option) => (
+                    <label key={option.id} className="cursor-pointer min-w-0">
+                      <input type="radio" name="cardStyle" value={option.id}
+                        checked={cardStyle === option.id} onChange={() => setCardStyle(option.id)}
+                        className="peer sr-only" />
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 transition hover:border-white/40 peer-checked:border-white/80 peer-checked:bg-white/[0.06] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-blue-400">
+                        <div aria-hidden="true" className="relative h-[175px] overflow-hidden pointer-events-none">
+                          <div className="absolute left-1/2 top-0 w-[320px] origin-top -translate-x-1/2 scale-[0.38]">
+                            <ProfileCard image={image} name={name || "Your name"} username={usernameVal || "username"} cardStyle={option.id} preview />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold text-white">{option.name}</span>
+                          <span className="text-[10px] text-white/60">{cardStyle === option.id ? "Selected" : ""}</span>
+                        </div>
+                        <p className="mt-1 text-[11px] leading-relaxed text-white/50">{option.description}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            </Section>
 
             {/* ── Basic details ── */}
             <Section title="Basic details" description="Your name, handle and bio.">
@@ -336,6 +373,23 @@ export default function EditClient({
                     ? <p className="text-[11px] text-white/30 mt-1.5">Can change again in {daysLeft} day{daysLeft === 1 ? "" : "s"}</p>
                     : <p className="text-[11px] text-white/20 mt-1.5">Lowercase letters, numbers, - and _ only</p>
                   }
+                </div>
+                {/* Phone */}
+                <div className="sm:col-span-2">
+                  <label htmlFor="profile-phone" className="block text-[13px] text-white/40 mb-1.5 font-medium tracking-[-0.005em]">
+                    Phone <span className="text-white/20 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    id="profile-phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="w-full bg-white/[0.06] text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/40 border border-white/10 rounded-xl px-3 py-[10px] transition"
+                  />
+                  <p className="text-[11px] text-white/20 mt-1.5">Public: added to your Save contact card, and shown on the Aura and Retro styles.</p>
                 </div>
                 {/* Bio */}
                 <div className="sm:col-span-2">

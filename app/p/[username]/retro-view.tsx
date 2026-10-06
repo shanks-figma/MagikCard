@@ -129,6 +129,7 @@ export default function RetroView({ user, isOwner, preview }: { user: User; isOw
         <div className={styles.bio}>
           <b>{displayName}</b>
           {user.bio && <p>{user.bio}</p>}
+          {user.phone && <a href={`tel:${user.phone.replace(/[^\d+]/g, "")}`}>{user.phone}</a>}
           {email && <a href={`mailto:${email}`}>{email}</a>}
           {website && <a href={normalizeUrl(website)} target="_blank" rel="noopener noreferrer">{hostOf(website)}</a>}
           {copied && <p role="status">Link copied to clipboard.</p>}

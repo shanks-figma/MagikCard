@@ -45,6 +45,7 @@ export type User = {
   username: string | null;
   bio: string | null;
   image: string | null;
+  phone?: string | null;
   links?: LinkItem[] | null;
   socialLinks?: Record<string, string> | null;
 };
@@ -413,7 +414,11 @@ function AuraView({ user, isOwner, preview }: { user: User; isOwner: boolean; pr
           </div>
 
           <h1 className={`${serif} mt-3 text-[46px] leading-[1.1] tracking-[-0.02em] break-words max-w-full`}>{displayName}</h1>
-          <p className="mt-4 text-[19px]" style={{ color: AURA.muted }}>@{username}</p>
+          {user.phone ? (
+            <a href={`tel:${user.phone.replace(/[^\d+]/g, "")}`} className="mt-4 text-[19px] hover:underline" style={{ color: AURA.muted }}>{user.phone}</a>
+          ) : (
+            <p className="mt-4 text-[19px]" style={{ color: AURA.muted }}>@{username}</p>
+          )}
         </section>
 
         {/* Primary action */}

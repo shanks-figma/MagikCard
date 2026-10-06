@@ -71,6 +71,8 @@ model User {
     socialLinks   Json?
     created_at    DateTime?     @default(now())
     emailVerified DateTime?
+    cardStyle     String?
+    phone         String?
     image         String?
     accounts      Account[]
     sessions      Session[]

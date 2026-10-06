@@ -105,7 +105,7 @@ export async function GET(
   try {
     const user = await prisma.user.findFirst({
       where: { username: params.username },
-      select: { name: true, username: true, bio: true, image: true, links: true, socialLinks: true },
+      select: { name: true, username: true, bio: true, image: true, phone: true, links: true, socialLinks: true },
     });
     if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -125,6 +125,7 @@ export async function GET(
     // User.email, which is their private account/login address.
     const publicEmail = socialLinks.email?.trim().replace(/^mailto:/i, "");
     if (publicEmail) lines.push(`EMAIL;TYPE=INTERNET:${esc(publicEmail)}`);
+    if (user.phone?.trim()) lines.push(`TEL;TYPE=CELL:${esc(user.phone.trim())}`);
 
     // The profile itself is the primary URL.
     lines.push(`URL:${esc(`${origin}/p/${user.username}`)}`);
